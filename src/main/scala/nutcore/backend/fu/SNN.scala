@@ -48,7 +48,7 @@ class ModuleIO(len: Int) extends Bundle{
     val out = DecoupledIO(Output(UInt(len.W)))
 }
 
-class spikeHander(len: Int) extends NutCoreModule{
+class SpikeProc(len: Int) extends NutCoreModule{
     val io = IO(new ModuleIO(len))
 
     def SNNInPipe[T <: data](a: T) = RegNext(a)
@@ -63,14 +63,16 @@ class spikeHander(len: Int) extends NutCoreModule{
     io.in.ready := !busy
 }
 
-class neurIO(len: Int) extends Bundle{
+class NeurIO(len: Int) extends Bundle{
     val in = Flipped(DecoupledIO(Vec(3, Output(UInt(len.W)))))
     val out = DecoupledIO(Output(UInt(len.W)))
 }
 
-class neurModule(len: Int = 64) extends NutCoreModule{
-    val io = IO(new neurIO(len))
+class NeurModule(len: Int) extends NutCoreModule{
 
+}
+
+class SynModule(len: Int) extends NutCoreModule{
 }
 
 //class memOpdecode
@@ -100,5 +102,7 @@ class SNN extends NutCoreModule{
     val isInit = SNNOpType.isInit(func)
 
     
-
+    List(SpikeProc.io, NeurModule.io, SynModule.io).map{ case x =>
+        x.out.ready := io.out.ready
+    }
 }
