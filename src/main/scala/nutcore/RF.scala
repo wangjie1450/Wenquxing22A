@@ -49,5 +49,5 @@ class ScoreBoard extends HasRegFileParameter {
 class snnrf extends HasRegFileParameter with HasNutCoreParameter{
   val srf = Mem(SNRReg, UInt(XLEN.W))
   def read(addr: UInt) : UInt = Mux(addr === 0.U, 0.U, srf(addr))
-  def write(addr: UInt, data: UInt) = {snnrf(addr) := data(XLEN-1, 0)}
+  def write(addr: UInt, data: UInt) = {srf(addr) := data(XLEN-1, 0)}
 }

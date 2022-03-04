@@ -84,8 +84,9 @@ class EXU(implicit val p: NutCoreConfig) extends NutCoreModule {
   mou.io.cfIn := io.in.bits.cf
   mou.io.out.ready := true.B
 
-  val snn = Module(new snn)
-  val snnOut = snn.access(valid = fuValids(FuType.snn), src1 = src1, src2 = src2, imm = io.in.bits.data.imm, func = fuOpType)
+  val snn = Module(new SNN)
+  val snnOut = snn.access(valid = fuValids(FuType.snn), src1 = src1, src2 = src2, func = fuOpType)
+  snn.io.imm := io.in.bits.data.imm
   snn.io.out.ready := true.B
 
   io.out.bits.decode := DontCare

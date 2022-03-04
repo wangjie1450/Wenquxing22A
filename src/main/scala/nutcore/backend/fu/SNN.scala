@@ -43,34 +43,20 @@ object SNNOpType{
     def isInit(func3: UInt):Bool  = func3(0) & func3(1) & func3(2)
 }
 
-class ModuleIO(len: Int) extends Bundle{
-    val in = Flipped(DecoupledIO(Vec(2, Output(UInt(len.W)))))
-    val out = DecoupledIO(Output(UInt(len.W)))
-}
+class SpikeProc(val len: Int) extends NutCoreModule{
+    val io = IO(new NutCoreBundle{
+        val src1 = Input(UInt(len.W))
+        val src2 = Input(UInt(len.W))
+        val imm  = Input(UInt(len.W))
+        val res  = Output(UInt(len.W))
+    })
 
-class WallaceTree(len: Int) extends Module{
-    
-}
+    val (src1, src2, imm) = (io.src1, io.src2, io.imm)
+    val sppRes = src1 & src2
+    val regPopRes = PopCount(sppRes)
 
-class SpikeProc(len: Int) extends NutCoreModule{
-    val io = IO(new ModuleIO(len))
-
-    def SNNInPipe[T <: data](a: T) = RegNext(a)
-    def SNNOutPipe[T <: data](a: T) = RegNext(RegNext(a))
-    val sppRes = (SNNInPipe(io.in.bits(0)).asUInt && SNNInPipe(io.in.bits(1)).asUInt)
-    val regPopRes = 0
-
-    for (i <- 0 to len-1 ){
-        regPopRes = regPopRes + sppRes(i)
-    }
-    def isPop(func7: UInt): Bool = !imm(1) & imm(0)
-    io.out.bits := Mux(isPop(imm), SNNOutPipe(regPopRes).asUInt, SNNOutPipe(sppRes).asUInt)
-    io.out.valid := SNNOutPipe(io.in.fire())
-
-    val busy = RegInit(false.B)
-    when (io.in.valid && !busy) { busy := true.B }
-    when (io.out.valid) { busy := false.B }
-    io.in.ready := !busy
+    def isPop(func7: UInt): Bool = !func7(1) & func7(0)
+    io.res := Mux(isPop(imm), regPopRes, sppRes)
 }
 
 class NeurIO(len: Int) extends Bundle{
@@ -85,13 +71,9 @@ class NeurModule(len: Int) extends NutCoreModule{
     
 }
 
-class SynModule(len: Int) extends NutCoreModule{
-}
-
 //class memOpdecode
 
 class SNNIO extends FunctionUnitIO{
-    val func6
     val imm = Input(UInt(XLEN.W))
     //val dmem = new SimpleBusUC(addrBits = VAddrBits, userBits = DCacheUserBundleWidth)
     //val dtlb = new SimpleBusUC(addrBits = VAddrBits, userBits = DCacheUserBundleWidth)
@@ -100,15 +82,16 @@ class SNNIO extends FunctionUnitIO{
 class SNN extends NutCoreModule{
     val io = IO(new SNNIO)
 
-    val (valid, src1, src2, imm, func) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.imm, io.in.bits.func)    
-    def access(valid: Bool, src1: UInt, src2: UInt, imm: UInt, func: UInt){
+    val imm = io.imm
+    val (valid, src1, src2, func) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func)    
+    def access(valid: Bool, src1: UInt, src2: UInt, func: UInt):UInt = {
         this.valid := valid
         this.src1 := src1
         this.src2 := src2
-        this.imm := imm
         this.func := func
         io.out.bits
     }
+    io.in.ready := DontCare
 
     val isEnOnl = SNNOpType.isSld(imm)
     val isLdOp = SNNOpType.isLdOp(func)

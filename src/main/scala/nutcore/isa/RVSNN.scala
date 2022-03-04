@@ -19,7 +19,7 @@ package nutcore
 import chisel3._
 import chisel3.util._
 
-class RVSnnInstr extends  HasInstrType{
+object RVSNNInstr extends  HasInstrType{
     def ANDS    = BitPat("b0000000_?????_?????_000_?????_0001011")
     def SGE     = BitPat("b0000001_?????_?????_000_?????_0001011")
     def RPOP    = BitPat("b0000000_00000_?????_001_?????_0001011")
@@ -36,10 +36,10 @@ class RVSnnInstr extends  HasInstrType{
     val table = Array(
         ANDS        -> List(InstrS,   FuType.snn,   SNNOpType.ands),
         SGE         -> List(InstrS,   FuType.snn,   SNNOpType.sge),
-        RPOP        -> List(InstrS,   FuType.snn,   SNNOpType.rpop),
-        SLS         -> List(InstrS,   FuType.snn,   SNNOpType.sls),
-        DRD         -> List(InstrS,   FuType.snn,   SNNOpType.drd),
-        SUP         -> List(InstrS,   FuType.snn,   SNNOpType.sup),
+        RPOP        -> List(InstrSNN,   FuType.snn,   SNNOpType.rpop),
+        SLS         -> List(InstrSNN,   FuType.snn,   SNNOpType.sls),
+        DRD         -> List(InstrSNN,   FuType.snn,   SNNOpType.drd),
+        SUP         -> List(InstrSNN,   FuType.snn,   SNNOpType.sup),
         NADD        -> List(InstrS,   FuType.snn,   SNNOpType.nadd),
         NST         -> List(InstrS,   FuType.snn,   SNNOpType.nst),
         SST         -> List(InstrS,   FuType.snn,   SNNOpType.sst),

@@ -101,7 +101,8 @@ class Decoder(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstr
     InstrSA -> SignExt(Cat(instr(31, 25), instr(11, 7)), XLEN),
     InstrB  -> SignExt(Cat(instr(31), instr(7), instr(30, 25), instr(11, 8), 0.U(1.W)), XLEN),
     InstrU  -> SignExt(Cat(instr(31, 12), 0.U(12.W)), XLEN),//fixed
-    InstrJ  -> SignExt(Cat(instr(31), instr(19, 12), instr(20), instr(30, 21), 0.U(1.W)), XLEN)
+    InstrJ  -> SignExt(Cat(instr(31), instr(19, 12), instr(20), instr(30, 21), 0.U(1.W)), XLEN),
+    InstrSNN  -> SignExt(instr(31, 25) ,XLEN) // special instr type
   ))
   val immrvc = LookupTree(rvcImmType, List(
     // InstrIW -> Cat(Fill(20+32, instr(31)), instr(31, 20)),//fixed
