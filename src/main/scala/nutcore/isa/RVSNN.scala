@@ -34,17 +34,17 @@ class RVSnnInstr extends  HasInstrType{
     def SINIT   = BitPat("b??????_?_?????_?????_111_?????_0001011")
 
     val table = Array(
-        ANDS        -> List(InstrSNN,   FuType.snn,   SNNOpType.ands),
-        SGE         -> List(InstrSNN,   FuType.snn,   SNNOpType.sge),
-        RPOP        -> List(InstrSNN,   FuType.snn,   SNNOpType.rpop),
-        SLS         -> List(InstrSNN,   FuType.snn,   SNNOpType.sls),
-        DRD         -> List(InstrSNN,   FuType.snn,   SNNOpType.drd),
-        SUP         -> List(InstrSNN,   FuType.snn,   SNNOpType.sup),
-        NADD        -> List(InstrSNN,   FuType.snn,   SNNOpType.nadd),
-        NST         -> List(InstrSNN,   FuType.snn,   SNNOpType.nst),
-        SST         -> List(InstrSNN,   FuType.snn,   SNNOpType.sst),
-        NLD         -> List(InstrSNN,   FuType.snn,   SNNOpType.nld),
-        SLD         -> List(InstrSNN,   FuType.snn,   SNNOpType.sld),
-        SINIT       -> List(InstrSNN,   FuType.snn,   SNNOpType.sinit)
+        ANDS        -> List(InstrS,   FuType.snn,   SNNOpType.ands),
+        SGE         -> List(InstrS,   FuType.snn,   SNNOpType.sge),
+        RPOP        -> List(InstrS,   FuType.snn,   SNNOpType.rpop),
+        SLS         -> List(InstrS,   FuType.snn,   SNNOpType.sls),
+        DRD         -> List(InstrS,   FuType.snn,   SNNOpType.drd),
+        SUP         -> List(InstrS,   FuType.snn,   SNNOpType.sup),
+        NADD        -> List(InstrS,   FuType.snn,   SNNOpType.nadd),
+        NST         -> List(InstrS,   FuType.snn,   SNNOpType.nst),
+        SST         -> List(InstrS,   FuType.snn,   SNNOpType.sst),
+        NLD         -> List(InstrI,   FuType.snn,   SNNOpType.nld),
+        SLD         -> List(InstrI,   FuType.snn,   SNNOpType.sld),
+        SINIT       -> List(InstrI,   FuType.snn,   SNNOpType.sinit)
     )
 }

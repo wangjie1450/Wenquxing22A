@@ -20,16 +20,15 @@ import chisel3._
 import chisel3.util._
 
 trait HasInstrType {
-  def InstrN    = "b00000".U
-  def InstrI    = "b00100".U
-  def InstrR    = "b00101".U
-  def InstrS    = "b00010".U
-  def InstrB    = "b00001".U
-  def InstrU    = "b00110".U
-  def InstrJ    = "b00111".U
-  def InstrA    = "b01110".U
-  def InstrSA   = "b01111".U // Atom Inst: SC
-  def InstrSNN  = "b10000".U
+  def InstrN    = "b0000".U
+  def InstrI    = "b0100".U
+  def InstrR    = "b0101".U
+  def InstrS    = "b0010".U
+  def InstrB    = "b0001".U
+  def InstrU    = "b0110".U
+  def InstrJ    = "b0111".U
+  def InstrA    = "b1110".U
+  def InstrSA   = "b1111".U // Atom Inst: SC
 
   def isrfWen(instrType : UInt): Bool = instrType(2)
 }

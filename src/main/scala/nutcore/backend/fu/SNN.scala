@@ -38,14 +38,18 @@ object SNNOpType{
     def sinit = "b1011".U    
 
     def isEnOnl(imm: UInt):Bool  = imm(0)
-    def isLdOp(func: UInt):Bool  = func(2) & (func(0) ^ func(1))
-    def isSld(func: UInt): Bool  = isLdOp(func) & func(1)
-    def isInit(func: UInt):Bool  = func(0) & func(1) & func(2)
+    def isLdOp(func3: UInt):Bool  = func3(2) & (func3(0) ^ func3(1))
+    def isSld(func3: UInt): Bool  = isLdOp(func3) & func3(1)
+    def isInit(func3: UInt):Bool  = func3(0) & func3(1) & func3(2)
 }
 
 class ModuleIO(len: Int) extends Bundle{
     val in = Flipped(DecoupledIO(Vec(2, Output(UInt(len.W)))
     val out = DecoupledIO(Output(UInt(len.W)))
+}
+
+class WallaceTree(len: Int) extends Module{
+    
 }
 
 class SpikeProc(len: Int) extends NutCoreModule{
@@ -54,7 +58,13 @@ class SpikeProc(len: Int) extends NutCoreModule{
     def SNNInPipe[T <: data](a: T) = RegNext(a)
     def SNNOutPipe[T <: data](a: T) = RegNext(RegNext(a))
     val sppRes = (SNNInPipe(io.in.bits(0)).asUInt && SNNInPipe(io.in.bits(1)).asUInt)
-    io.out.bits := SNNOutPipe(sppRes).asUInt
+    val regPopRes = 0
+
+    for (i <- 0 to len-1 ){
+        regPopRes = regPopRes + sppRes(i)
+    }
+    def isPop(func7: UInt): Bool = !imm(1) & imm(0)
+    io.out.bits := Mux(isPop(imm), SNNOutPipe(regPopRes).asUInt, SNNOutPipe(sppRes).asUInt)
     io.out.valid := SNNOutPipe(io.in.fire())
 
     val busy = RegInit(false.B)
@@ -69,7 +79,10 @@ class NeurIO(len: Int) extends Bundle{
 }
 
 class NeurModule(len: Int) extends NutCoreModule{
+    val io = IO(new NeurIO(len))
 
+    val (vInit, vin, nuerState) = (io.in.bits(0), io.in.bits(1), io.in.bits(2))
+    
 }
 
 class SynModule(len: Int) extends NutCoreModule{
@@ -78,6 +91,7 @@ class SynModule(len: Int) extends NutCoreModule{
 //class memOpdecode
 
 class SNNIO extends FunctionUnitIO{
+    val func6
     val imm = Input(UInt(XLEN.W))
     //val dmem = new SimpleBusUC(addrBits = VAddrBits, userBits = DCacheUserBundleWidth)
     //val dtlb = new SimpleBusUC(addrBits = VAddrBits, userBits = DCacheUserBundleWidth)
@@ -101,8 +115,10 @@ class SNN extends NutCoreModule{
     val isSld = SNNOpType.isSld(func)
     val isInit = SNNOpType.isInit(func)
 
-    
-    List(SpikeProc.io, NeurModule.io, SynModule.io).map{ case x =>
-        x.out.ready := io.out.ready
-    }
+    io.out.valid := DontCare
+    io.out.ready := DontCare
+    io.out.bits  := DontCare
+    //List(SpikeProc.io, NeurModule.io, SynModule.io).map{ case x =>
+    //    x.out.ready := io.out.ready
+    //}
 }
