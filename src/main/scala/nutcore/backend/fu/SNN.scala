@@ -98,9 +98,15 @@ class SNN extends NutCoreModule{
     val isSld = SNNOpType.isSld(func)
     val isInit = SNNOpType.isInit(func)
 
+    val ssp = Module(new SpikeProc(XLEN))
+    ssp.io.src1 := src1
+    ssp.io.src2 := src2
+    ssp.io.imm := imm
+    val res = ssp.io.res
+
+    io.out.bits := res
     io.out.valid := DontCare
     io.out.ready := DontCare
-    io.out.bits  := DontCare
     //List(SpikeProc.io, NeurModule.io, SynModule.io).map{ case x =>
     //    x.out.ready := io.out.ready
     //}
