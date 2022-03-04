@@ -44,7 +44,7 @@ object SNNOpType{
 }
 
 class ModuleIO(len: Int) extends Bundle{
-    val in = Flipped(DecoupledIO(Vec(2, Output(UInt(len.W)))
+    val in = Flipped(DecoupledIO(Vec(2, Output(UInt(len.W)))))
     val out = DecoupledIO(Output(UInt(len.W)))
 }
 
