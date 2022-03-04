@@ -52,8 +52,10 @@ class SpikeProc(val len: Int) extends NutCoreModule{
     })
 
     val (src1, src2, imm) = (io.src1, io.src2, io.imm)
-    val sppRes = src1 & src2
-    val regPopRes = PopCount(sppRes)
+    val sppRes = RegInit(0.U(len.W))
+    val regPopRes = RegInit(0.U(len.W))
+    sppRes := src1 & src2
+    regPopRes := PopCount(sppRes)
 
     def isPop(func7: UInt): Bool = !func7(1) & func7(0)
     io.res := Mux(isPop(imm), regPopRes, sppRes)
