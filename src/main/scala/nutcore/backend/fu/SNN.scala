@@ -57,20 +57,76 @@ class SpikeProc(val len: Int) extends NutCoreModule{
     sppRes := src1 & src2
     regPopRes := PopCount(sppRes)
 
-    def isPop(func7: UInt): Bool = !func7(1) & func7(0)
+    def isPop(func7: UInt): Bool = func7(0)
     io.res := Mux(isPop(imm), regPopRes, sppRes)
 }
 
-class NeurIO(len: Int) extends Bundle{
-    val in = Flipped(DecoupledIO(Vec(3, Output(UInt(len.W)))))
-    val out = DecoupledIO(Output(UInt(len.W)))
+// neuron update
+// full adder
+class FullAdder extends Module{
+    val io = IO(new Bundle{
+        val in = Vec(2,Input(UInt(1.W)))
+        val cin = Input(UInt(1.W)) 
+        val sum = Output(UInt(1.W))
+        val co = Output(UInt(1.W))
+    })
+    io.co := io.in(1) & io.in(0) & io.cin
+    io.sum := io.in(0) ^ io.in(1) ^io.cin
+}
+
+// Wallace tree adder
+class WallaceTree(len: Int = 8)extends Module{
+    val io = IO(new Bundle{
+        val in = Vec(3, Input(UInt(len.W)))
+        val out = Output(UInt(len.W))
+    })
+
+
+    val adder = VecInit(Seq.fill(8){Module(new FullAdder).io})
+    for (i <- 0 to 7){
+        for (j <- 0 to 2){
+                adder(i).in(j) := io.in(j)
+        }
+    }
+
+    val sum = 0.U
+    val co = 0.U
+    for(i <- 0 to 8){
+        sum := Cat(adder(i).sum)
+        co := Cat(adder(i).co)
+    }
+    val res = (sum + co) << 1.U
+    io.out := res(7,0)
 }
 
 class NeurModule(len: Int) extends NutCoreModule{
-    val io = IO(new NeurIO(len))
+    val io = IO(new NutCoreBundle{
+        val vInit = Input(UInt(len.W))
+        val vIn = Input(UInt(len.W))
+        val neurPreS = Input(UInt(len.W))
+        val leaky = Input(UInt(len.W))
+        val vTh = Input(UInt(len.W))
+        val imm = Input(UInt(len.W))
+        val Spike = Output(UInt(1.W))
+        val res = Output(UInt(len.W))
+    })
 
-    val (vInit, vin, nuerState) = (io.in.bits(0), io.in.bits(1), io.in.bits(2))
-    
+    val (vinit, vin, neurpres) = (io.vInit, io.vIn, io.neurPreS)
+    val wlt = Module(new WallaceTree)
+
+    val leakyv = ~io.leaky + 1.U
+    val vth = io.vTh
+    wlt.io.in(0) := leakyv(7,0)
+    wlt.io.in(1) := vin(7,0)
+    wlt.io.in(2) := neurpres(7,0)
+
+    val neurnexts = wlt.io.out
+    val spike = Mux(neurnexts >= vth, 1.U, 0.U)
+    val outputr = RegInit(0.U(len.W))
+    val outres = (outputr + spike) << 1
+    def isComp(func7: UInt): Bool = func7(0) & !func7(1)
+    io.res := Mux(isComp(io.imm), outres, neurnexts)
+
 }
 
 //class memOpdecode
