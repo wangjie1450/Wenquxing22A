@@ -111,22 +111,24 @@ class NeurModule(len: Int) extends NutCoreModule{
         val res = Output(UInt(len.W))
     })
 
-    val (vinit, vin, neurpres) = (io.vInit, io.vIn, io.neurPreS)
+    val (vInit, vIn, neurPreS) = (io.vInit, io.vIn, io.neurPreS)
     val wlt = Module(new WallaceTree)
 
-    val leakyv = ~io.leaky + 1.U
-    val vth = io.vTh
-    wlt.io.in(0) := leakyv(7,0)
-    wlt.io.in(1) := vin(7,0)
-    wlt.io.in(2) := neurpres(7,0)
+    val leaky = ~io.leaky + 1.U
+    val vTh = io.vTh
+    wlt.io.in(0) := leaky(7,0)
+    wlt.io.in(1) := vIn(7,0)
+    wlt.io.in(2) := neurPreS(7,0)
 
+    def isSpike(neurnexts: UInt, vTh: UInt): Bool ={
+        Mux(neurnexts >= vTh, true.B, false.B)
+    }
     val neurnexts = wlt.io.out
-    val spike = Mux(neurnexts >= vth, 1.U, 0.U)
+    val spike = Mux(isSpike(neurnexts = neurnexts, vTh = io.vTh), 1.U, 0.U)
     val outputr = RegInit(0.U(len.W))
     val outres = (outputr + spike) << 1
     def isComp(func7: UInt): Bool = func7(0) & !func7(1)
     io.res := Mux(isComp(io.imm), outres, neurnexts)
-
 }
 
 //class memOpdecode
@@ -160,7 +162,23 @@ class SNN extends NutCoreModule{
     ssp.io.src1 := src1
     ssp.io.src2 := src2
     ssp.io.imm := imm
-    val res = ssp.io.res
+
+    val vInit = 0.U(XLEN.W)
+    val vIn = 0.U(XLEN.W)
+    val neurPreS = 0.U(XLEN.W)
+    val vTh = 0.U(XLEN.W)
+    val leaky = 0.U(XLEN.W)
+
+
+    val neurn = Module(new NeurModule(XLEN))
+    neurn.io.imm := imm
+    neurn.io.vInit := vInit
+    neurn.io.vIn := vIn
+    neurn.io.neurPreS := src1
+    neurn.io.leaky := leaky
+
+
+    val res = Mux(func === "b010".U, neurn.io.res, ssp.io.res)
 
     io.out.bits := res
     io.out.valid := DontCare
