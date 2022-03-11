@@ -24,23 +24,21 @@ import utils._
 import top.Settings
 
 object SNNOpType{
-    def ands  = "b0000".U 
-    def sge   = "b0001".U
-    def rpop  = "b0010".U
-    def sls   = "b0011".U
-    def drd   = "b0100".U
-    def sup   = "b0101".U
-    def nadd  = "b0110".U
-    def nst   = "b0111".U
-    def sst   = "b1000".U
-    def nld   = "b1001".U
-    def sld   = "b1010".U
-    def sinit = "b1011".U    
+    def ands  = "b0000000_000".U 
+    def sge   = "b0000001_000".U
+    def rpop  = "b0000000_001".U
+    def sls   = "b0000001_001".U
+    def drd   = "b0000010_001".U
+    def sup   = "b0000011_001".U
+    def nadd  = "b010".U
+    def nst   = "b011".U
+    def sst   = "b100".U
+    def nld   = "b101".U
+    def sld   = "b110".U
+    def sinit = "b111".U    
 
-    def isEnOnl(imm: UInt):Bool  = imm(0)
-    def isLdOp(func3: UInt):Bool  = func3(2) & (func3(0) ^ func3(1))
-    def isSld(func3: UInt): Bool  = isLdOp(func3) & func3(1)
-    def isInit(func3: UInt):Bool  = func3(0) & func3(1) & func3(2)
+    def isDOp(func: UInt): Bool = !func(1) & !func(2)
+    def isInit(func: UInt):Bool = !isDOp(func) & func(0)
 }
 
 class SNNIO extends FunctionUnitIO{
@@ -59,12 +57,10 @@ class SNN extends NutCoreModule{
         this.func := func
         io.out.bits
     }
-    io.in.ready := DontCare
 
-    val isEnOnl = SNNOpType.isSld(imm)
-    val isLdOp = SNNOpType.isLdOp(func)
-    val isSld = SNNOpType.isSld(func)
-    val isInit = SNNOpType.isInit(func)
+    val option = Mux(SNNOpType.isDOp(func), Cat(imm, func), func)
+
+    io.in.ready := DontCare
 
     // spike process module
     val ssp = Module(new SpikeProc(XLEN))
@@ -78,21 +74,33 @@ class SNN extends NutCoreModule{
     val vTh = RegInit(0.U(XLEN.W))
     val leaky = RegInit(0.U(XLEN.W))
     val spike = RegInit(0.U(1.W))
+    val output = RegInit(0.U(XLEN.W))
 
     // neuron module
-    val neurn = Module(new NeurModule(XLEN))
-    neurn.io.neurPreS := src1
-    neurn.io.vIn := src2
-    neurn.io.imm := imm
-    neurn.io.vInit := vInit
-    neurn.io.vTh := vTh
-    neurn.io.leaky := leaky
-    spike := neurn.io.spike
+    val neuron = Module(new NeurModule(XLEN))
+    neuron.io.neurPreS := src1
+    neuron.io.vIn := src2
+    neuron.io.vInit := vInit
+    neuron.io.vTh := vTh
+    neuron.io.leaky := leaky
+    spike := neuron.io.spike
 
     // STDP module
-    //val stdp = Module(new One_bit_STDP)
+    val stdp = Module(new STDP(XLEN))
+    stdp.io.en := (SNNOpType.isInit(func) & imm(0)).asUInt
+    stdp.io.input := src2
+    stdp.io.synapse := src1
+    stdp.io.output := output
+    
 
-    val res = Mux(func === "b010".U, neurn.io.res, ssp.io.res)
+    val res = LookupTree(option, List(
+        SNNOpType.ands  ->  ssp.io.andres,
+        SNNOpType.sge   ->  neuron.io.spike,
+        SNNOpType.rpop  ->  ssp.io.popres,
+        SNNOpType.sls   ->  neuron.io.output,
+        SNNOpType.sup   ->  stdp.io.res,
+        SNNOpType.nadd  ->  neuron.io.res
+    ))
 
     io.out.bits := res
     io.out.valid := DontCare

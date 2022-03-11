@@ -24,7 +24,8 @@ class SpikeProc(val len: Int) extends NutCoreModule{
         val src1 = Input(UInt(len.W))
         val src2 = Input(UInt(len.W))
         val imm  = Input(UInt(len.W))
-        val res  = Output(UInt(len.W))
+        val andres  = Output(UInt(len.W))
+        val popres = Output(UInt(len.W))
     })
 
     val (src1, src2, imm) = (io.src1, io.src2, io.imm)
@@ -33,6 +34,6 @@ class SpikeProc(val len: Int) extends NutCoreModule{
     sppRes := src1 & src2
     regPopRes := PopCount(sppRes)
 
-    def isPop(func7: UInt): Bool = func7(0)
-    io.res := Mux(isPop(imm), regPopRes, sppRes)
+    io.andres := sppRes
+    io.popres := regPopRes
 }

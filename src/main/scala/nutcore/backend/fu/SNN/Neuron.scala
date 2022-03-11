@@ -25,9 +25,9 @@ class NeuronIO(val len: Int) extends NutCoreBundle{
     val neurPreS = Input(UInt(len.W))
     val leaky = Input(UInt(len.W))
     val vTh = Input(UInt(len.W))
-    val imm = Input(UInt(len.W))
     val spike = Output(UInt(1.W))
     val res = Output(UInt(len.W))
+    val output = Output(UInt(len.W))
 }
 
 class NeurModule(len: Int) extends NutCoreModule{
@@ -38,7 +38,6 @@ class NeurModule(len: Int) extends NutCoreModule{
     val neurPreS = io.neurPreS
     val leaky = ~io.leaky + 1.U
     val vTh = io.vTh
-    val func7 = io.imm
 
     val wlt = Module(new WallaceTree)
     wlt.io.in(0) := leaky(7,0)
@@ -54,10 +53,8 @@ class NeurModule(len: Int) extends NutCoreModule{
     val outputr = RegInit(0.U(len.W))
 
     neurnexts := Mux(spike, vInit, wlt.io.sum)
-    outputr := (outputr + spike.asUInt) << 1
+    io.output := (outputr + spike.asUInt) << 1
 
-    def isComp(func7: UInt): Bool = func7(0) & !func7(1)
-
-    io.res := Mux(isComp(func7), outputr, neurnexts)
+    io.res := neurnexts
     io.spike := spike.asUInt
 }
