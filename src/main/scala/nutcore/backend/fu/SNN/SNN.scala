@@ -24,12 +24,12 @@ import utils._
 import top.Settings
 
 object SNNOpType{
-    def ands  = "b0000000_000".U 
-    def sge   = "b0000001_000".U
-    def rpop  = "b0000000_001".U
-    def sls   = "b0000001_001".U
-    def drd   = "b0000010_001".U
-    def sup   = "b0000011_001".U
+    def ands  = "b00000_000".U 
+    def sge   = "b00001_000".U
+    def rpop  = "b00000_001".U
+    def sls   = "b00001_001".U
+    def vth   = "b00010_001".U
+    def sup   = "b00011_001".U
     def nadd  = "b010".U
     def nst   = "b011".U
     def sst   = "b100".U
@@ -41,14 +41,25 @@ object SNNOpType{
     def isInit(func: UInt):Bool = !isDOp(func) & func(0)
 }
 
+object SNNRF{
+    def vinit = "b00".U
+    def vth = "b01".U
+    def nr  = "b10".U
+    def sr  = "b11".U
+}
+
 class SNNIO extends FunctionUnitIO{
     val imm = Input(UInt(XLEN.W))
+    val toSNNvth = Input(UInt(XLEN.W))
+    val toSNNvinit = Input(UInt(XLEN.W))
 }
 
 class SNN extends NutCoreModule{
     val io = IO(new SNNIO)
 
     val imm = io.imm
+    val vTh = io.toSNNvth
+    val vinit = io.toSNNvinit
     val (valid, src1, src2, func) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func)    
     def access(valid: Bool, src1: UInt, src2: UInt, func: UInt):UInt = {
         this.valid := valid
@@ -69,20 +80,17 @@ class SNN extends NutCoreModule{
     ssp.io.imm := imm
 
     // neuron inputs
-    val vInit = RegInit(0.U(XLEN.W))
-    val neurPreS = RegInit(0.U(XLEN.W))
-    val vTh = RegInit(0.U(XLEN.W))
-    val leaky = RegInit(0.U(XLEN.W))
-    val spike = RegInit(0.U(1.W))
-    val output = RegInit(0.U(XLEN.W))
+    val neurPreS = RegInit(UInt(XLEN.W), 0.U)
+    val spike = RegInit(UInt(1.W), 0.U)
+    val output = RegInit(UInt(XLEN.W), 0.U)
 
     // neuron module
     val neuron = Module(new NeurModule(XLEN))
-    neuron.io.neurPreS := src1
-    neuron.io.vIn := src2
-    neuron.io.vInit := vInit
+    neuron.io.neurPreS := src2
+    neuron.io.vIn := ssp.io.popres
+    neuron.io.vInit := vinit
     neuron.io.vTh := vTh
-    neuron.io.leaky := leaky
+    neuron.io.leaky := src1
     spike := neuron.io.spike
 
     // STDP module
