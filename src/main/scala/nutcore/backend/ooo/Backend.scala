@@ -669,6 +669,7 @@ class Backend_inorder(implicit val p: NutCoreConfig) extends NutCoreModule {
     val dmem = new SimpleBusUC(addrBits = VAddrBits)
     val memMMU = Flipped(new MemMMUIO)
 
+
     val redirect = new RedirectIO
   })
 
@@ -683,8 +684,8 @@ class Backend_inorder(implicit val p: NutCoreConfig) extends NutCoreModule {
   
   isu.io.flush := io.flush(0)
   exu.io.flush := io.flush(1)
-
   isu.io.wb <> wbu.io.wb
+  
   io.redirect <> wbu.io.redirect
   // forward
   isu.io.forward <> exu.io.forward  
