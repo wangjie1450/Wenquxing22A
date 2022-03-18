@@ -44,6 +44,9 @@ class Decoder(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstr
   io.out.bits.ctrl.fuType := fuType
   io.out.bits.ctrl.fuOpType := fuOpType
 
+  val isSNN = (instr(6, 0) === "b0001011".U) && !(fuOpType === SNNOpType.ands || fuOpType === SNNOpType.sge || fuOpType === SNNOpType.rpop || fuOpType === SNNOpType.sls)
+  io.out.bits.ctrl.isSNN := isSNN
+
   val SrcTypeTable = List(
     InstrI -> (SrcType.reg, SrcType.imm),
     InstrR -> (SrcType.reg, SrcType.reg),
@@ -52,12 +55,16 @@ class Decoder(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstr
     InstrB -> (SrcType.reg, SrcType.reg),
     InstrU -> (SrcType.pc , SrcType.imm),
     InstrJ -> (SrcType.pc , SrcType.imm),
-    InstrN -> (SrcType.pc , SrcType.imm)
+    InstrN -> (SrcType.pc , SrcType.imm),
+    InstrSNNS -> (SrcType.reg, SrcType.reg),
+    InstrSNNL -> (SrcType.reg, SrcType.imm),
+    InstrSNNR -> (SrcType.reg, SrcType.reg)
   )
   val src1Type = LookupTree(instrType, SrcTypeTable.map(p => (p._1, p._2._1)))
   val src2Type = LookupTree(instrType, SrcTypeTable.map(p => (p._1, p._2._2)))
 
   val (rs, rt, rd) = (instr(19, 15), instr(24, 20), instr(11, 7))
+  
   // see riscv-spec vol1, Table 16.1: Compressed 16-bit RVC instruction formats.
   val rs1       = instr(11,7)
   val rs2       = instr(6,2)
@@ -102,7 +109,11 @@ class Decoder(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstr
     InstrB  -> SignExt(Cat(instr(31), instr(7), instr(30, 25), instr(11, 8), 0.U(1.W)), XLEN),
     InstrU  -> SignExt(Cat(instr(31, 12), 0.U(12.W)), XLEN),//fixed
     InstrJ  -> SignExt(Cat(instr(31), instr(19, 12), instr(20), instr(30, 21), 0.U(1.W)), XLEN),
-    InstrSNN  -> SignExt(instr(31, 25) ,XLEN) // special instr type
+    InstrSNNR  -> ZeroExt(instr(31, 25) ,XLEN), // func7
+    InstrSNNL  -> ZeroExt(instr(31, 20), XLEN), // offset
+    InstrSNNS  -> ZeroExt(Cat(instr(31, 25), instr(11, 7)), XLEN), // offset
+    InstrSNNU  -> ZeroExt(Cat(0.U(12.W),instr(31,15)), XLEN), // SNNINIT
+    InstrSNNsp -> ZeroExt(instr(24, 15), XLEN)
   ))
   val immrvc = LookupTree(rvcImmType, List(
     // InstrIW -> Cat(Fill(20+32, instr(31)), instr(31, 20)),//fixed
