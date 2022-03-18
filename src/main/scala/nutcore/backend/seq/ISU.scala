@@ -36,6 +36,7 @@ class ISU(implicit val p: NutCoreConfig) extends NutCoreModule with HasRegFilePa
   val rfSrc1 = io.in(0).bits.ctrl.rfSrc1
   val rfSrc2 = io.in(0).bits.ctrl.rfSrc2
   val rfDest1 = io.in(0).bits.ctrl.rfDest
+  val isSNN = io.in(0).bits.ctrl.isSNN
 
   def isDepend(rfSrc: UInt, rfDest: UInt, wen: Bool): Bool = (rfSrc =/= 0.U) && (rfSrc === rfDest) && wen
 
@@ -57,19 +58,21 @@ class ISU(implicit val p: NutCoreConfig) extends NutCoreModule with HasRegFilePa
   io.out.valid := io.in(0).valid && src1Ready && src2Ready
 
   val rf = new RegFile
+  val srf = new SRegFile
 
   // out1
   io.out.bits.data.src1 := Mux1H(List(
     (io.in(0).bits.ctrl.src1Type === SrcType.pc) -> SignExt(io.in(0).bits.cf.pc, AddrBits),
     src1ForwardNextCycle -> io.forward.wb.rfData, //io.forward.wb.rfData,
     (src1Forward && !src1ForwardNextCycle) -> io.wb.rfData, //io.wb.rfData,
-    ((io.in(0).bits.ctrl.src1Type =/= SrcType.pc) && !src1ForwardNextCycle && !src1Forward) -> rf.read(rfSrc1)
+    ((io.in(0).bits.ctrl.src1Type =/= SrcType.pc) && !src1ForwardNextCycle && !src1Forward)-> rf.read(rfSrc1)
   ))
   io.out.bits.data.src2 := Mux1H(List(
     (io.in(0).bits.ctrl.src2Type =/= SrcType.reg) -> io.in(0).bits.data.imm,
     src2ForwardNextCycle -> io.forward.wb.rfData, //io.forward.wb.rfData,
     (src2Forward && !src2ForwardNextCycle) -> io.wb.rfData, //io.wb.rfData,
-    ((io.in(0).bits.ctrl.src2Type === SrcType.reg) && !src2ForwardNextCycle && !src2Forward) -> rf.read(rfSrc2)
+    (((io.in(0).bits.ctrl.src2Type === SrcType.reg) && !src2ForwardNextCycle && !src2Forward) && !isSNN) -> rf.read(rfSrc2),
+    (((io.in(0).bits.ctrl.src2Type =/= SrcType.pc) && !src2ForwardNextCycle && !src2Forward) && isSNN) -> srf.read(rfSrc2)
   ))
   io.out.bits.data.imm  := io.in(0).bits.data.imm
 
@@ -78,8 +81,17 @@ class ISU(implicit val p: NutCoreConfig) extends NutCoreModule with HasRegFilePa
   io.out.bits.ctrl.isSrc1Forward := src1ForwardNextCycle
   io.out.bits.ctrl.isSrc2Forward := src2ForwardNextCycle
 
-  // retire: write rf
-  when (io.wb.rfWen) { rf.write(io.wb.rfDest, io.wb.rfData) }
+  // retire: write rf or srf
+  when (io.wb.rfWen) { 
+    when(!isSNN){
+      rf.write(io.wb.rfDest, io.wb.rfData)
+    }.otherwise{
+      srf.write(io.wb.rfDest, io.wb.rfData)
+    }
+   }
+
+  io.out.bits.data.toSNNvth := srf.read(SNNRF.vth)
+  io.out.bits.data.toSNNvinit := srf.read(SNNRF.vinit)
 
   val wbClearMask = Mux(io.wb.rfWen && !isDepend(io.wb.rfDest, io.forward.wb.rfDest, forwardRfWen), sb.mask(io.wb.rfDest), 0.U(NRReg.W))
   // val isuFireSetMask = Mux(io.out.fire(), sb.mask(rfDest), 0.U)
