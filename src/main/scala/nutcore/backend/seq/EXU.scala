@@ -31,7 +31,7 @@ class EXU(implicit val p: NutCoreConfig) extends NutCoreModule {
     val flush = Input(Bool())
     val dmem = new SimpleBusUC(addrBits = VAddrBits)
     val forward = new ForwardIO
-    val memMMU = Flipped(new MemMMUIO)
+    val memMMU = Flipped(new MemMMUIO)   
   })
 
   val src1 = io.in.bits.data.src1(XLEN-1,0)
@@ -88,6 +88,8 @@ class EXU(implicit val p: NutCoreConfig) extends NutCoreModule {
   val snnOut = snn.access(valid = fuValids(FuType.snn), src1 = src1, src2 = src2, func = fuOpType)
   snn.io.imm := io.in.bits.data.imm
   snn.io.out.ready := true.B
+  snn.io.toSNNvinit := io.in.bits.data.toSNNvinit
+  snn.io.toSNNvth := io.in.bits.data.toSNNvth
 
   io.out.bits.decode := DontCare
   (io.out.bits.decode.ctrl, io.in.bits.ctrl) match { case (o, i) =>
