@@ -29,7 +29,12 @@ trait HasInstrType {
   def InstrJ    = "b00111".U
   def InstrA    = "b01110".U
   def InstrSA   = "b01111".U // Atom Inst: SC
-  def InstrSNN  = "b10000".U
+  def InstrSNNS  = "b10000".U  // SNN store
+  def InstrSNNL  = "b10101".U // SNN load
+  def InstrSNNR  = "b10110".U // SNN R-Type
+  def InstrSNNU  = "b10111".U // SNN U-type
+  def InstrSNNsp = "b11111".U 
+
 
   def isrfWen(instrType : UInt): Bool = instrType(2)
 }
@@ -47,11 +52,12 @@ trait HasInstrType {
 //   )
 // }
 
-object SrcType {
-  def reg = "b0".U
-  def pc  = "b1".U
-  def imm = "b1".U
-  def apply() = UInt(1.W)
+object SrcType {// add sreg
+  def reg = "b00".U
+  def pc  = "b01".U
+  def imm = "b01".U
+  def sreg = "b10".U
+  def apply() = UInt(2.W)
 }
 
 object FuType extends HasNutCoreConst {
