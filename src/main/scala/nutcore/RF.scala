@@ -24,7 +24,7 @@ import utils._
 
 trait HasRegFileParameter {
   val NRReg = 32
-  val SNRReg = 4
+  val SNRReg = 5
 }
 
 class RegFile extends HasRegFileParameter with HasNutCoreParameter {
@@ -46,7 +46,7 @@ class ScoreBoard extends HasRegFileParameter {
   }
 }
 
-class snnrf extends HasRegFileParameter with HasNutCoreParameter{
+class SRegFile extends HasRegFileParameter with HasNutCoreParameter{
   val srf = Mem(SNRReg, UInt(XLEN.W))
   def read(addr: UInt) : UInt = Mux(addr === 0.U, 0.U, srf(addr))
   def write(addr: UInt, data: UInt) = {srf(addr) := data(XLEN-1, 0)}
