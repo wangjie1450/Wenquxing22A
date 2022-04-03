@@ -19,21 +19,26 @@ package nutcore
 import chisel3._
 import chisel3.util._
 
+class SspIO(val len: Int) extends NutCoreBundle{
+    val in = Flipped(DecoupledIO(new Bundle{
+        val src1   = Input(UInt(len.W))
+        val src2   = Input(UInt(len.W))
+        val op     = Input(UInt(len.W))
+        }))
+    val out = DecoupledIO(Output(UInt(len.W)))
+}
+
 class SpikeProc(val len: Int) extends NutCoreModule{
-    val io = IO(new NutCoreBundle{
-        val src1 = Input(UInt(len.W))
-        val src2 = Input(UInt(len.W))
-        val imm  = Input(UInt(len.W))
-        val andres  = Output(UInt(len.W))
-        val popres = Output(UInt(len.W))
-    })
+    val io = IO(new SspIO(len))
 
-    val (src1, src2, imm) = (io.src1, io.src2, io.imm)
-    val sppRes = RegInit(0.U(len.W))
-    val regPopRes = RegInit(0.U(len.W))
-    sppRes := src1 & src2
-    regPopRes := PopCount(sppRes)
+    val (valid, src1, src2, op) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.op)
+    
+    def isAnds(op:UInt): Bool = op === SNNOpType.ands
+    val andsRes = src1 & src2
+    val regPopRes = PopCount(andsRes)
 
-    io.andres := sppRes
-    io.popres := regPopRes
+    io.out.bits := Mux(isAnds(op), andsRes, regPopRes)
+    
+    io.in.ready := io.out.ready
+    io.out.valid := valid
 }

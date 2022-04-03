@@ -31,14 +31,10 @@ object SNNOpType{
     def vth   = "b00010_001".U
     def sup   = "b00011_001".U
     def nadd  = "b010".U
-    def nst   = "b011".U
-    def sst   = "b100".U
-    def nld   = "b101".U
-    def sld   = "b110".U
     def sinit = "b111".U    
 
-    def isDOp(func: UInt): Bool = !func(1) & !func(2)
-    def isInit(func: UInt):Bool = !isDOp(func) & func(0)
+    def isDOp(func: UInt): Bool = !func(1) && !func(2)
+    def isInit(func: UInt):Bool = !isDOp(func) && func(0)
 }
 
 object SNNRF{
@@ -46,6 +42,13 @@ object SNNRF{
     def vth = "b01".U
     def nr  = "b10".U
     def sr  = "b11".U
+}
+
+object  SNNCalcType{
+    def ssp     = "b00".U
+    def neuron  = "b01".U
+    def stdp    = "b10".U 
+    def none    = "b11".U
 }
 
 class SNNIO extends FunctionUnitIO{
@@ -58,8 +61,10 @@ class SNN extends NutCoreModule{
     val io = IO(new SNNIO)
 
     val imm = io.imm
-    val vTh = io.toSNNvth
+    val toSNNvth = io.toSNNvth
     val vinit = io.toSNNvinit
+    val vleaky = toSNNvth(15,8)
+    val vth = toSNNvth(7,0)
     val (valid, src1, src2, func) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func)    
     def access(valid: Bool, src1: UInt, src2: UInt, func: UInt):UInt = {
         this.valid := valid
@@ -71,13 +76,24 @@ class SNN extends NutCoreModule{
 
     val option = Mux(SNNOpType.isDOp(func), Cat(imm, func), func)
 
-    io.in.ready := DontCare
+    val calcUnit = LookupTree(option, List(
+        SNNOpType.ands        -> SNNCalcType.ssp,
+        SNNOpType.sge         -> SNNCalcType.neuron,
+        SNNOpType.rpop        -> SNNCalcType.ssp,
+        SNNOpType.sls         -> SNNCalcType.neuron,
+        SNNOpType.vth         -> SNNCalcType.none,
+        SNNOpType.sup         -> SNNCalcType.stdp,
+        SNNOpType.nadd        -> SNNCalcType.neuron,
+        SNNOpType.sinit       -> SNNCalcType.none // addsi
+    ))
 
     // spike process module
     val ssp = Module(new SpikeProc(XLEN))
-    ssp.io.src1 := src1
-    ssp.io.src2 := src2
-    ssp.io.imm := imm
+    ssp.io.in.bits.src1 := src1
+    ssp.io.in.bits.src2 := src2
+    ssp.io.in.bits.op := option
+    ssp.io.out.ready := io.out.ready
+    ssp.io.in.valid := valid && (calcUnit === SNNCalcType.ssp)
 
     // neuron inputs
     val neurPreS = RegInit(UInt(XLEN.W), 0.U)
@@ -86,12 +102,14 @@ class SNN extends NutCoreModule{
 
     // neuron module
     val neuron = Module(new NeurModule(XLEN))
-    neuron.io.neurPreS := src2
-    neuron.io.vIn := ssp.io.popres
-    neuron.io.vInit := vinit
-    neuron.io.vTh := vTh
-    neuron.io.leaky := src1
-    spike := neuron.io.spike
+    neuron.io.in.bits.src1  := src1
+    neuron.io.in.bits.src2  := src2
+    neuron.io.in.bits.vth   := vth
+    neuron.io.in.bits.vleaky := vleaky
+    neuron.io.in.bits.vinit := vinit
+    neuron.io.in.bits.option := option
+    neuron.io.out.ready     := io.out.ready
+    neuron.io.in.valid      := valid && (calcUnit === SNNCalcType.neuron)
 
     // STDP module
     val stdp = Module(new STDP(XLEN))
@@ -102,18 +120,20 @@ class SNN extends NutCoreModule{
     
 
     val res = LookupTree(option, List(
-        SNNOpType.ands  ->  ssp.io.andres,
-        SNNOpType.sge   ->  neuron.io.spike,
-        SNNOpType.rpop  ->  ssp.io.popres,
-        SNNOpType.sls   ->  neuron.io.output,
+        SNNOpType.ands  ->  ssp.io.out.bits,
+        SNNOpType.sge   ->  neuron.io.out.bits.spike,
+        SNNOpType.rpop  ->  ssp.io.out.bits,
+        SNNOpType.sls   ->  neuron.io.out.bits.output,
         SNNOpType.sup   ->  stdp.io.res,
-        SNNOpType.nadd  ->  neuron.io.res
+        SNNOpType.nadd  ->  neuron.io.out.bits.vneuron
+    ))
+
+    io.in.ready := LookupTree(calcUnit, List(
+        SNNCalcType.ssp         -> ssp.io.in.ready,
+        SNNCalcType.neuron      -> neuron.io.in.ready
+        //SNNCalcType.stdp        -> stdp.in.ready
     ))
 
     io.out.bits := res
-    io.out.valid := DontCare
-    io.out.ready := DontCare
-    //List(SpikeProc.io, NeurModule.io, SynModule.io).map{ case x =>
-    //    x.out.ready := io.out.ready
-    //}
+    io.out.valid := ssp.io.out.valid
 }
