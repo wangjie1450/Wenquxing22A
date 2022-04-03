@@ -30,6 +30,7 @@ import utils.GTimer
 
 class DiffTestIO extends Bundle {
   val r = Output(Vec(32, UInt(64.W)))
+  val sr = Output(Vec(5, UInt(64.W)))
   val commit = Output(Bool())
   val isMultiCommit = Output(Bool())
   val thisPC = Output(UInt(64.W))
@@ -87,6 +88,7 @@ class NutShellSimTop extends Module {
   BoringUtils.addSink(difftest.isRVC2, "difftestIsRVC2")
   BoringUtils.addSink(difftest.intrNO, "difftestIntrNO")
   BoringUtils.addSink(difftest.r, "difftestRegs")
+  BoringUtils.addSink(difftest.sr, "difftestSRegs")
   BoringUtils.addSink(difftest.priviledgeMode, "difftestMode")
   BoringUtils.addSink(difftest.mstatus, "difftestMstatus")
   BoringUtils.addSink(difftest.sstatus, "difftestSstatus") 

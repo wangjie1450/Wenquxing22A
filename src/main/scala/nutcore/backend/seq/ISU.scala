@@ -111,5 +111,6 @@ class ISU(implicit val p: NutCoreConfig) extends NutCoreModule with HasRegFilePa
 
   if (!p.FPGAPlatform) {
     BoringUtils.addSource(VecInit((0 to NRReg-1).map(i => rf.read(i.U))), "difftestRegs")
+    BoringUtils.addSource(VecInit((0 to SNRReg - 1).map(i => srf.read(i.U))), "difftestSRegs")
   }
 }
