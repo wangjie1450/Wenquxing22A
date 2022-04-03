@@ -145,14 +145,16 @@ class Emulator {
         hascommit = 1;
         extern void init_difftest(rtlreg_t *reg);
         rtlreg_t reg[DIFFTEST_NR_REG];
-        read_emu_regs(reg);
+        rtlreg_t sreg[5];
+        read_emu_regs(reg, sreg);
         init_difftest(reg);
       }
 
       // difftest
       if (dut_ptr->io_difftest_commit && hascommit) {
         rtlreg_t reg[DIFFTEST_NR_REG];
-        read_emu_regs(reg);
+        rtlreg_t sreg[5];
+        read_emu_regs(reg, sreg);
 
         extern int difftest_step(rtlreg_t *reg_scala, uint32_t this_inst,
           int isMMIO, int isRVC, int isRVC2, uint64_t intrNO, int priviledgeMode, int isMultiCommit);
