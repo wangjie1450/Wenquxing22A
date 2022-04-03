@@ -35,7 +35,7 @@ class SpikeProc(val len: Int) extends NutCoreModule{
     
     def isAnds(op:UInt): Bool = op === SNNOpType.ands
     val andsRes = src1 & src2
-    val regPopRes = PopCount(andsRes)
+    val regPopRes = PopCount(src1)
 
     io.out.bits := Mux(isAnds(op), andsRes, regPopRes)
     
