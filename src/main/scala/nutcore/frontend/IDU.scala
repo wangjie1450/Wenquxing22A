@@ -44,7 +44,7 @@ class Decoder(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstr
   io.out.bits.ctrl.fuType := fuType
   io.out.bits.ctrl.fuOpType := fuOpType
 
-  val isSNN = (instr(6, 0) === "b0001011".U) && !(fuOpType === SNNOpType.ands || fuOpType === SNNOpType.sge || fuOpType === SNNOpType.rpop || fuOpType === SNNOpType.sls)
+  val isSNN = (instr(6, 0) === "b0001011".U) && !(fuOpType === SNNOpType.ands || fuOpType === SNNOpType.rpop || fuOpType === SNNOpType.sls)
   io.out.bits.ctrl.isSNN := isSNN
 
   val SrcTypeTable = List(
