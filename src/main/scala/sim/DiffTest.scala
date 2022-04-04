@@ -28,7 +28,7 @@ class DiffTestCtrlIO extends Bundle {
 }
 
 class AXI4DiffTestCtrl extends AXI4SlaveModule(new AXI4Lite, new DiffTestCtrlIO) {
-  val enable = RegInit(true.B)
+  val enable = RegInit(false.B)
 
   val mapping = Map(
     RegMap(0x0, enable)
