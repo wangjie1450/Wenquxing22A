@@ -25,82 +25,49 @@ class NeuronIO(val len: Int) extends NutCoreBundle{
     val in = Flipped(DecoupledIO(new Bundle{
         val src1        = Input(UInt(len.W))
         val src2        = Input(UInt(len.W))
-        val vth         = Input(UInt(len.W))
-        val vleaky      = Input(UInt(len.W))
+        val imm         = Input(UInt(len.W))
         val vinit       = Input(UInt(len.W))
         val option      = Input(UInt(len.W))
     }))
-    val out = DecoupledIO(new Bundle{
-        val spike       = Output(Bool())
-        val vneuron     = Output(UInt(len.W))
-        val output      = Output(UInt(len.W))
-    })
+    val out = DecoupledIO(Output(UInt(len.W)))
 }
 
 class NeurModule(len: Int) extends NutCoreModule{
     val io = IO(new NeuronIO(len))
 
-    val (valid, src1, src2, option) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.option)
+    val valid = io.in.valid
+    val src1 = io.in.bits.src1
+    val src2 = io.in.bits.src2
+    val imm = io.in.bits.imm
+    val option = io.in.bits.option
+    //val wlt = Module(new WallaceTree)
+    //wlt.io.in(0) := src1(7,0)
+    //wlt.io.in(1) := src2(7,0)
+    //wlt.io.in(2) := (imm(7,0) ^ Fill(8, 1.U)) + 1.U
+    val sum = RegInit(0.U(len.W))
+    //sum := wlt.io.sum
+    val naddRes = src1 + src2 + ((imm ^ Fill(len, 1.U)) + 1.U)
+    val overflow = WireInit(false.B)
+    //overflow := wlt.io.overf
+    val spike  = (src1 >= src2) || overflow
+    val slsRes = (src1 << 1) + src2
+    val sgeRes = Mux(spike && option === SNNOpType.sge && valid, io.in.bits.vinit(63, 1), src1)
 
-    val s_idle::s_nadd::s_sge::s_sls::Nil = Enum(4)
-
-    val op          = RegInit(s_idle)
-    val vneuron_reg = Reg(UInt(len.W))
-    val vth_reg     = Reg(UInt(len.W))
-    val vin_reg     = Reg(UInt(len.W))
-    val vleaky_reg  = Reg(UInt(len.W))
-    val vinit_reg   = Reg(UInt(len.W))
-    val output_reg  = Reg(UInt(len.W))
-    val spike       = Reg(Bool())
-    val overf       = Reg(Bool())
-    val naddRes     = RegInit(0.U(len.W))
-
-    op := LookupTree(option, List(
-        SNNOpType.nadd      -> s_nadd,
-        SNNOpType.sge       -> s_sge,
-        SNNOpType.sls       -> s_sls
+    io.out.bits := LookupTree(option, List(
+        SNNOpType.nadd      ->  naddRes,
+        SNNOpType.sls       ->  slsRes,
+        SNNOpType.sge       ->  sgeRes
     ))
-    
-    io.out.valid    := valid
-    io.in.ready     := io.out.ready   
-
-    when (op === s_idle) {
-        io.out.valid    := valid
-        io.in.ready     := io.out.ready
-        vth_reg         := io.in.bits.vth
-        vleaky_reg      := io.in.bits.vleaky
-        vinit_reg       := io.in.bits.vinit
-    }.elsewhen (op === s_nadd) {
-        io.out.valid    := false.B
-        io.in.ready     := false.B
-        vneuron_reg     := io.in.bits.src2
-        vin_reg         := io.in.bits.src1
-
-        val wlt = Module(new WallaceTree)
-        wlt.io.in(0)    := vleaky_reg(7,0)
-        wlt.io.in(1)    := vin_reg(7,0)
-        wlt.io.in(2)    := vneuron_reg(7,0)
-
-        overf           := wlt.io.overf
-        naddRes         := wlt.io.sum
-        when(wlt.io.sum =/= 0.U){ op := s_idle }
-    }.elsewhen (op === s_sge) {
-        io.out.valid    := false.B
-        io.in.ready     := false.B
-        vneuron_reg     := io.in.bits.src1
-        spike           := (vneuron_reg >= vth_reg) || overf
-        op              := s_idle
-    }.elsewhen (op === s_sls) {
-        io.out.valid    := false.B
-        io.in.ready     := false.B
-        output_reg      := (io.in.bits.src1 << 1) + spike.asUInt
-        op              := s_idle
-    }.otherwise{
-        io.out.valid    := false.B
-        io.in.ready     := false.B
+    when (valid && SNNDebug.enablePrint){
+        printf("[neuron]option = 0x%x\n",option)
+        printf("[neuron]src1 = 0x%x\n", src1)
+        printf("[neuron]src2 = 0x%x\n", src2)
+        printf("[neuron]imm = 0x%x\n", imm)
+        when (option === SNNOpType.nadd) { printf("[neuron]naddRes = 0x%x\n", naddRes) }
+        when (option === SNNOpType.sls) { printf("[neuron]slsRes = 0x%x\n", slsRes) }
+        when (option === SNNOpType.sge) { printf("[neuron]sgeRes = 0x%x\n", sgeRes) }
     }
-    
-    io.out.bits.spike   := spike
-    io.out.bits.vneuron := vneuron_reg
-    io.out.bits.output  := output_reg
+
+    io.in.ready := io.out.ready
+    io.out.valid := valid
 }
