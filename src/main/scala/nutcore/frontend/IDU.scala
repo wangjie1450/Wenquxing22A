@@ -44,9 +44,6 @@ class Decoder(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstr
   io.out.bits.ctrl.fuType := fuType
   io.out.bits.ctrl.fuOpType := fuOpType
 
-  val isSNN = (instr(6, 0) === "b0001011".U) && !(fuOpType === SNNOpType.ands || fuOpType === SNNOpType.rpop || fuOpType === SNNOpType.sls)
-  io.out.bits.ctrl.isSNN := isSNN
-
   val SrcTypeTable = List(
     InstrI -> (SrcType.reg, SrcType.imm),
     InstrR -> (SrcType.reg, SrcType.reg),
@@ -58,7 +55,8 @@ class Decoder(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstr
     InstrN -> (SrcType.pc , SrcType.imm),
     InstrSNNS -> (SrcType.reg, SrcType.reg),
     InstrSNNL -> (SrcType.reg, SrcType.imm),
-    InstrSNNR -> (SrcType.reg, SrcType.reg)
+    InstrSNNR -> (SrcType.reg, SrcType.reg),
+    InstrSNNU -> (SrcType.imm, SrcType.imm)
   )
   val src1Type = LookupTree(instrType, SrcTypeTable.map(p => (p._1, p._2._1)))
   val src2Type = LookupTree(instrType, SrcTypeTable.map(p => (p._1, p._2._2)))
