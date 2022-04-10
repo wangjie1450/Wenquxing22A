@@ -31,11 +31,20 @@ class WBU(implicit val p: NutCoreConfig) extends NutCoreModule{
   io.wb.rfWen := io.in.bits.decode.ctrl.rfWen && io.in.valid
   io.wb.rfDest := io.in.bits.decode.ctrl.rfDest
   io.wb.rfData := io.in.bits.commits(io.in.bits.decode.ctrl.fuType)
+  io.wb.srfWen := io.in.bits.decode.ctrl.srfWen && io.in.valid
+  io.wb.srfDest := io.in.bits.decode.ctrl.srfDest
+  io.wb.srfData := Mux (io.in.bits.decode.ctrl.srfWen && io.in.valid, io.in.bits.commits(FuType.snn), 0.U)
 
   io.in.ready := true.B
 
   io.redirect := io.in.bits.decode.cf.redirect
   io.redirect.valid := io.in.bits.decode.cf.redirect.valid && io.in.valid
+
+  when (io.in.valid &&  io.wb.srfWen && SNNDebug.enablePrint) {
+    printf("[WBU] srfEn = 0x%x\n", io.wb.srfWen)
+    printf("[WBU] srfWData = 0x%x\n", io.wb.srfData)
+    printf("\n")
+  }
 
   Debug(io.in.valid, "[COMMIT] pc = 0x%x inst %x wen %x wdst %x wdata %x mmio %x intrNO %x\n", io.in.bits.decode.cf.pc, io.in.bits.decode.cf.instr, io.wb.rfWen, io.wb.rfDest, io.wb.rfData, io.in.bits.isMMIO, io.in.bits.intrNO)
 
