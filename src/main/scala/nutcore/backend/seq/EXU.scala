@@ -39,6 +39,14 @@ class EXU(implicit val p: NutCoreConfig) extends NutCoreModule {
 
   val (fuType, fuOpType) = (io.in.bits.ctrl.fuType, io.in.bits.ctrl.fuOpType)
 
+  when (io.in.valid === true.B && fuType === FuType.snn && SNNDebug.enablePrint){
+      printf("[EXU]fuOpType = 0x%x\n",fuOpType)
+      printf("[EXU]src1 = 0x%x\n", src1)
+      printf("[EXU]src2 = 0x%x\n", src2)
+      printf("[EXU]imm = 0x%x\n", io.in.bits.data.imm)
+      printf("\n")
+  }
+
   val fuValids = Wire(Vec(FuType.num, Bool()))
   (0 until FuType.num).map (i => fuValids(i) := (fuType === i.U) && io.in.valid && !io.flush)
 
@@ -88,14 +96,15 @@ class EXU(implicit val p: NutCoreConfig) extends NutCoreModule {
   val snnOut = snn.access(valid = fuValids(FuType.snn), src1 = src1, src2 = src2, func = fuOpType)
   snn.io.imm := io.in.bits.data.imm
   snn.io.out.ready := true.B
-  snn.io.toSNNvinit := io.in.bits.data.toSNNvinit
-  snn.io.toSNNvth := io.in.bits.data.toSNNvth
+  snn.io.srf  <> io.in.bits.data.srf 
 
   io.out.bits.decode := DontCare
   (io.out.bits.decode.ctrl, io.in.bits.ctrl) match { case (o, i) =>
     o.rfWen := i.rfWen && (!lsuTlbPF && !lsu.io.loadAddrMisaligned && !lsu.io.storeAddrMisaligned || !fuValids(FuType.lsu)) && !(csr.io.wenFix && fuValids(FuType.csr))
     o.rfDest := i.rfDest
     o.fuType := i.fuType
+    o.srfWen := snn.io.wen
+    o.srfDest := snn.io.srfAddrGen
   }
   io.out.bits.decode.cf.pc := io.in.bits.cf.pc
   io.out.bits.decode.cf.instr := io.in.bits.cf.instr
@@ -124,8 +133,11 @@ class EXU(implicit val p: NutCoreConfig) extends NutCoreModule {
 
   io.forward.valid := io.in.valid
   io.forward.wb.rfWen := io.in.bits.ctrl.rfWen
+  io.forward.wb.srfWen := snn.io.wen
   io.forward.wb.rfDest := io.in.bits.ctrl.rfDest
+  io.forward.wb.srfDest := snn.io.srfAddrGen
   io.forward.wb.rfData := Mux(alu.io.out.fire(), aluOut, lsuOut)
+  io.forward.wb.srfData := DontCare
   io.forward.fuType := io.in.bits.ctrl.fuType
 
   val isBru = ALUOpType.isBru(fuOpType)
