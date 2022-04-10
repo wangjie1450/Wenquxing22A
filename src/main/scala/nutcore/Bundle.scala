@@ -28,20 +28,20 @@ class CtrlSignalIO extends NutCoreBundle {
   val rfSrc2 = Output(UInt(5.W))
   val rfWen = Output(Bool())
   val rfDest = Output(UInt(5.W))
+  val srfWen = Output(Bool())
+  val srfDest = Output(UInt(2.W))
   val isNutCoreTrap = Output(Bool())
   val isSrc1Forward = Output(Bool())
   val isSrc2Forward = Output(Bool())
   val noSpecExec = Output(Bool())  // This inst can not be speculated
   val isBlocked = Output(Bool())   // This inst requires pipeline to be blocked
-  val isSNN = Output(Bool())
 }
 
 class DataSrcIO extends NutCoreBundle {
   val src1 = Output(UInt(XLEN.W))
   val src2 = Output(UInt(XLEN.W))
   val imm  = Output(UInt(XLEN.W))
-  val toSNNvinit = Output(UInt(XLEN.W))
-  val toSNNvth = Output(UInt(XLEN.W))
+  val srf  = Output(Vec(SNNRF.num, UInt(XLEN.W)))
 }
 
 class RedirectIO extends NutCoreBundle {
@@ -79,6 +79,9 @@ class WriteBackIO extends NutCoreBundle {
   val rfWen = Output(Bool())
   val rfDest = Output(UInt(5.W))
   val rfData = Output(UInt(XLEN.W))
+  val srfWen = Output(Bool())
+  val srfDest = Output(UInt(2.W))
+  val srfData = Output(UInt(XLEN.W))
 }
 
 class CommitIO extends NutCoreBundle {
