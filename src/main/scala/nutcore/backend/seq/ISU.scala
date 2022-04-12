@@ -62,9 +62,15 @@ class ISU(implicit val p: NutCoreConfig) extends NutCoreModule with HasRegFilePa
   // snn regfile operation
   val srf = new SRegFile
 
-  for (i <- 0 to (SNNRF.num - 1)){
-    io.out.bits.data.srf(i) := srf.read(i.asUInt)
-  }
+  //io.out.bits.data.srf(SNNRF.vinit) := Mux(io.wb.srfDest === SNNRF.vinit, io.wb.srfData, 
+  //                                          Mux(io.forward.wb.srfDest === SNNRF.vinit, io.forward.wb.srfData, srf.read(SNNRF.vinit)))
+  io.out.bits.data.srf(SNNRF.vinit) := srf.read(SNNRF.vinit)
+  io.out.bits.data.srf(SNNRF.output) := Mux(io.wb.srfDest === SNNRF.output, io.wb.srfData,  
+                                            Mux(io.forward.wb.srfDest === SNNRF.output, io.forward.wb.srfData, srf.read(SNNRF.output)))
+  io.out.bits.data.srf(SNNRF.nr)    := Mux(io.wb.srfDest === SNNRF.nr, io.wb.srfData, 
+                                            Mux(io.forward.wb.srfDest === SNNRF.nr, io.forward.wb.srfData, srf.read(SNNRF.nr)))
+  io.out.bits.data.srf(SNNRF.sr)    := Mux(io.wb.srfDest === SNNRF.sr, io.wb.srfData, 
+                                            Mux(io.forward.wb.srfDest === SNNRF.sr, io.forward.wb.srfData, srf.read(SNNRF.sr)))
 
   when (io.wb.srfWen) { srf.write(io.wb.srfDest, io.wb.srfData) }
 
@@ -88,7 +94,7 @@ class ISU(implicit val p: NutCoreConfig) extends NutCoreModule with HasRegFilePa
   io.out.bits.ctrl.isSrc1Forward := src1ForwardNextCycle
   io.out.bits.ctrl.isSrc2Forward := src2ForwardNextCycle
 
-  // retire: write rf or srf
+  // retire: write rf
   when (io.wb.rfWen) { rf.write(io.wb.rfDest, io.wb.rfData) }
 
 

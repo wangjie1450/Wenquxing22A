@@ -34,12 +34,11 @@ object SNNOpType{
     def sinit = "b1110".U    
 
     //def isDOp(func: UInt): Bool = !func(1) && !func(2)
-    def isInit(func: UInt):Bool = func === sinit
-    def isWen(func: UInt):Bool  = (func === sge || func === sinit || func === sls || func === sup || isInit(func) )
+    def isWen(func: UInt):Bool  = (func === sge || func === sinit || func === sls || func === sup )
 }
 
 object SNNRF{
-    def num = 5
+    def num = 4
     def vinit = "b00".U
     def output = "b01".U
     def nr  = "b10".U
@@ -104,6 +103,7 @@ class SNN extends NutCoreModule{
     neuron.io.in.bits.src2  := src2
     neuron.io.in.bits.imm   := imm
     neuron.io.in.bits.vinit := io.srf(SNNRF.vinit)
+    neuron.io.in.bits.spike := io.srf(SNNRF.nr)
     neuron.io.in.bits.option := option
     neuron.io.out.ready     := io.out.ready
     neuron.io.in.valid      := valid && (calcUnit === SNNCalcType.neuron)
@@ -161,6 +161,7 @@ class SNN extends NutCoreModule{
         printf("[SNN]src1 = 0x%x\n", src1)
         printf("[SNN]src2 = 0x%x\n", src2)
         printf("[SNN]imm = 0x%x\n", imm)
+        printf("[SNN]vinit = 0x%x\n", io.srf(0))
         printf("\n")
     }
 }

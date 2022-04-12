@@ -137,7 +137,7 @@ class EXU(implicit val p: NutCoreConfig) extends NutCoreModule {
   io.forward.wb.rfDest := io.in.bits.ctrl.rfDest
   io.forward.wb.srfDest := snn.io.srfAddrGen
   io.forward.wb.rfData := Mux(alu.io.out.fire(), aluOut, lsuOut)
-  io.forward.wb.srfData := DontCare
+  io.forward.wb.srfData := snnOut
   io.forward.fuType := io.in.bits.ctrl.fuType
 
   val isBru = ALUOpType.isBru(fuOpType)
