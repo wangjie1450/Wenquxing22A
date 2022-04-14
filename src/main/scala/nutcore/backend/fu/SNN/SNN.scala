@@ -39,10 +39,10 @@ object SNNOpType{
 
 object SNNRF{
     def num = 4
-    def vinit = "b00".U
-    def output = "b01".U
-    def nr  = "b10".U
-    def sr  = "b11".U
+    def vinit = "b001".U
+    def output = "b010".U
+    def nr  = "b011".U
+    def sr  = "b100".U
 }
 
 object  SNNCalcType{
@@ -60,7 +60,7 @@ class SNNIO extends FunctionUnitIO{
 }
 
 object SNNDebug {
-    def enablePrint = false.B
+    def enablePrint = true.B
 }
 
 class SNN extends NutCoreModule{
