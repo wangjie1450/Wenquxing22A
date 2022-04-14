@@ -41,7 +41,7 @@ class WBU(implicit val p: NutCoreConfig) extends NutCoreModule{
   io.redirect.valid := io.in.bits.decode.cf.redirect.valid && io.in.valid
 
   when (io.in.valid &&  io.wb.srfWen && SNNDebug.enablePrint) {
-    printf("[WBU] srfEn = 0x%x\n", io.wb.srfWen)
+    printf("[WBU] srfWen = 0x%x\n", io.wb.srfWen)
     printf("[WBU] srfWData = 0x%x\n", io.wb.srfData)
     printf("\n")
   }
