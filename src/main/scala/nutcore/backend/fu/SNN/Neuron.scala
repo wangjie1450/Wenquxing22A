@@ -53,7 +53,7 @@ class NeurModule(len: Int) extends NutCoreModule{
     val spike  = src1 >= src2
     val slsRes = (src1 << 1) + io.in.bits.spike(0)
     val spikeUint = spike.asUInt
-    val sgeRes = Mux(spike && option === SNNOpType.sge && valid, Cat(io.in.bits.vinit(63, 1), 1.U), src1)
+    val sgeRes = Mux(spike && option === SNNOpType.sge && valid, Cat(io.in.bits.vinit(63, 1), 1.U), Cat(src1, 0.U))
 
     io.out.bits := LookupTree(option, List(
         SNNOpType.nadd      ->  naddRes,
