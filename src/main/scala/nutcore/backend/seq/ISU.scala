@@ -61,17 +61,21 @@ class ISU(implicit val p: NutCoreConfig) extends NutCoreModule with HasRegFilePa
   val rf = new RegFile
   // snn regfile operation
   val srf = new SRegFile
-
-  //io.out.bits.data.srf(SNNRF.vinit) := Mux(io.wb.srfDest === SNNRF.vinit, io.wb.srfData, 
-  //                                          Mux(io.forward.wb.srfDest === SNNRF.vinit, io.forward.wb.srfData, srf.read(SNNRF.vinit)))
-  io.out.bits.data.srf(SNNRF.vinit) := srf.read(SNNRF.vinit)
-  io.out.bits.data.srf(SNNRF.output) := Mux(io.wb.srfDest === SNNRF.output, io.wb.srfData,  
-                                            Mux(io.forward.wb.srfDest === SNNRF.output, io.forward.wb.srfData, srf.read(SNNRF.output)))
-  io.out.bits.data.srf(SNNRF.nr)    := Mux(io.wb.srfDest === SNNRF.nr, io.wb.srfData, 
-                                            Mux(io.forward.wb.srfDest === SNNRF.nr, io.forward.wb.srfData, srf.read(SNNRF.nr)))
-  io.out.bits.data.srf(SNNRF.sr)    := Mux(io.wb.srfDest === SNNRF.sr, io.wb.srfData, 
-                                            Mux(io.forward.wb.srfDest === SNNRF.sr, io.forward.wb.srfData, srf.read(SNNRF.sr)))
-
+  val forwardSrfWen = io.forward.wb.srfWen && io.forward.valid
+  val srfReq = LookupTree(io.in(0).bits.ctrl.fuOpType, List(
+    SNNOpType.sge     -> SNNRF.vinit,
+    SNNOpType.sls     -> SNNRF.nr,
+    SNNOpType.sup     -> SNNRF.sr
+  )) 
+  io.out.bits.data.srf(SNNRF.vinit) := Mux(io.forward.wb.srfDest === srfReq, io.forward.wb.srfData, 
+                                            Mux(io.wb.srfDest === srfReq, io.wb.srfData, srf.read(SNNRF.vinit)))
+  //io.out.bits.data.srf(SNNRF.vinit) := srf.read(SNNRF.vinit)
+  io.out.bits.data.srf(SNNRF.output) := Mux(io.forward.wb.srfDest === srfReq, io.forward.wb.srfData,  
+                                            Mux(io.wb.srfDest === srfReq, io.wb.srfData, srf.read(SNNRF.output)))
+  io.out.bits.data.srf(SNNRF.nr)    := Mux(io.forward.wb.srfDest === srfReq, io.forward.wb.srfData, 
+                                            Mux(io.wb.srfDest === srfReq, io.wb.srfData, srf.read(SNNRF.nr)))
+  io.out.bits.data.srf(SNNRF.sr)    := Mux(io.forward.wb.srfDest === srfReq, io.forward.wb.srfData, 
+                                            Mux(io.wb.srfDest === srfReq, io.wb.srfData, srf.read(SNNRF.sr)))
   when (io.wb.srfWen) { srf.write(io.wb.srfDest, io.wb.srfData) }
 
   // out1
@@ -100,14 +104,19 @@ class ISU(implicit val p: NutCoreConfig) extends NutCoreModule with HasRegFilePa
 
 
   when (io.in(0).valid === true.B && io.wb.srfWen && SNNDebug.enablePrint){
-      printf("[ISU] a0 = 0x%x\n", rf.read(10.U))
+      /*printf("[ISU] a0 = 0x%x\n", rf.read(10.U))
       printf("[ISU] a1 = 0x%x\n", rf.read(11.U))
       printf("[ISU] a2 = 0x%x\n", rf.read(12.U))
       printf("[ISU] io.wb.srfData = 0x%x\n",io.wb.srfData)
       printf("[ISU] SRF[0] = 0x%x\n",srf.read(SNNRF.vinit))
       printf("[ISU] SRF[1] = 0x%x\n",srf.read(SNNRF.output))
       printf("[ISU] SRF[2] = 0x%x\n",srf.read(SNNRF.nr))
-      printf("[ISU] SRF[3] = 0x%x\n",srf.read(SNNRF.sr))
+      printf("[ISU] SRF[3] = 0x%x\n",srf.read(SNNRF.sr))*/
+      printf("[ISU] srfReq = %d\n", srfReq)      
+      printf("[ISU] io.forward.wb.srfDest = 0x%x\n", io.forward.wb.srfDest)      
+      printf("[ISU] io.forward.wb.srfData = 0x%x\n", io.forward.wb.srfData)      
+      printf("[ISU] io.wb.srfDest = 0x%x\n", io.wb.srfDest)      
+      printf("[ISU] io.wb.srfData = 0x%x\n", io.wb.srfData)      
       printf("\n")
   }
 
