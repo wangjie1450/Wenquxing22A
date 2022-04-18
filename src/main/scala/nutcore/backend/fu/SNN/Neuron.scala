@@ -47,13 +47,13 @@ class NeurModule(len: Int) extends NutCoreModule{
     //wlt.io.in(2) := (imm(7,0) ^ Fill(8, 1.U)) + 1.U
     //val sum = RegInit(0.U(len.W))
     //sum := wlt.io.sum
-    val naddRes = src1 + src2 + ((imm ^ Fill(len, 1.U)) + 1.U)
+    val nadd = src1(63,1) + src2 + ((imm ^ Fill(len, 1.U)) + 1.U)
+    val naddRes = nadd << 1
     //val overflow = WireInit(false.B)
     //overflow := wlt.io.overf
-    val spike  = src1 >= src2
+    val spike  = src1(63,1) >= src2
     val slsRes = (src1 << 1) + io.in.bits.spike(0)
-    val spikeUint = spike.asUInt
-    val sgeRes = Mux(spike && option === SNNOpType.sge && valid, Cat(io.in.bits.vinit(63, 1), 1.U), Cat(src1, 0.U))
+    val sgeRes = Mux(spike && option === SNNOpType.sge && valid, Cat(io.in.bits.vinit(63, 1), 1.U), Cat(src1(63,1), 0.U))
 
     io.out.bits := LookupTree(option, List(
         SNNOpType.nadd      ->  naddRes,
