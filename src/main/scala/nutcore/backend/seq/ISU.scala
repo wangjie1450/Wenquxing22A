@@ -65,7 +65,7 @@ class ISU(implicit val p: NutCoreConfig) extends NutCoreModule with HasRegFilePa
   val srfReq = LookupTree(io.in(0).bits.ctrl.fuOpType, List(
     SNNOpType.sge     -> SNNRF.vinit,
     SNNOpType.sls     -> SNNRF.nr,
-    SNNOpType.sup     -> SNNRF.sr
+    SNNOpType.sup     -> SNNRF.output
   )) 
   io.out.bits.data.srf(SNNRF.vinit) := Mux(io.forward.wb.srfDest === srfReq, io.forward.wb.srfData, 
                                             Mux(io.wb.srfDest === srfReq, io.wb.srfData, srf.read(SNNRF.vinit)))
