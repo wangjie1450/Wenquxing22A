@@ -40,8 +40,8 @@ class STDP(len: Int) extends NutCoreModule{
     val (valid, src1, src2, op) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.op)
     val imm = io.in.bits.imm
     val stdpEnable = io.in.bits.vinit(0)
-    val output_reg = RegInit(0.U(len.W))
-    val input_reg  = RegInit(0.U(len.W))
+    //val output_reg = RegInit(0.U(len.W))
+    //val input_reg  = RegInit(0.U(len.W))
     val syn_reg    = RegInit(0.U(len.W))
 
     io.in.ready := io.out.ready
@@ -51,18 +51,17 @@ class STDP(len: Int) extends NutCoreModule{
     when(op === SNNOpType.sinit && valid) {
         io.out.bits.res := io.in.bits.imm
     }.elsewhen(op === SNNOpType.sup && valid && stdpEnable){
-        output_reg := io.in.bits.output
-        input_reg  := io.in.bits.src2
-        syn_reg    := io.in.bits.src1
+        //output_reg := io.in.bits.output
+        //input_reg  := io.in.bits.src2
+        //syn_reg    := io.in.bits.src1
         val syn_new = VecInit(syn_reg.asBools)
         for (i <- 0 to (len - 1)){
-            if(output_reg(i) == 1.U)  syn_new(i) := input_reg(i) && output_reg(i)
-        else    syn_new(i) := syn_reg(i)
-        }
-
+            when(io.in.bits.output(i) === 1.U){syn_new(i) := src2(i) && io.in.bits.output(i)}
+            when(io.in.bits.output(i) === 0.U){syn_new(i) := src1(i)}
+        }  
         io.out.bits.res := syn_new.asUInt
     }.elsewhen(op === SNNOpType.sup && valid && !stdpEnable) {
-        io.out.bits.res := syn_reg
+        io.out.bits.res := src1
     }.otherwise {
         io.out.bits.res := DontCare
     }
@@ -71,6 +70,8 @@ class STDP(len: Int) extends NutCoreModule{
         printf("[stdp]src1 = 0x%x\n", src1)
         printf("[stdp]src2 = 0x%x\n", src2)
         printf("[stdp]imm = 0x%x\n", imm)
+        printf("[stdp]en = 0x%x\n", stdpEnable)
+        printf("[stdp]output = 0x%x\n", io.in.bits.output)
         printf("[stdp]res = 0x%x\n", io.out.bits.res)       
         printf("\n")
     }
