@@ -29,7 +29,7 @@ class CtrlSignalIO extends NutCoreBundle {
   val rfWen = Output(Bool())
   val rfDest = Output(UInt(5.W))
   val srfWen = Output(Bool())
-  val srfDest = Output(UInt(2.W))
+  val srfDest = Output(UInt(3.W))
   val isNutCoreTrap = Output(Bool())
   val isSrc1Forward = Output(Bool())
   val isSrc2Forward = Output(Bool())
