@@ -60,7 +60,7 @@ class SNNIO extends FunctionUnitIO{
 }
 
 object SNNDebug {
-    def enablePrint = true.B
+    def enablePrint = false.B
 }
 
 class SNN extends NutCoreModule{
