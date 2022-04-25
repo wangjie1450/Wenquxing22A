@@ -103,7 +103,7 @@ class EXU(implicit val p: NutCoreConfig) extends NutCoreModule {
     o.rfWen := i.rfWen && (!lsuTlbPF && !lsu.io.loadAddrMisaligned && !lsu.io.storeAddrMisaligned || !fuValids(FuType.lsu)) && !(csr.io.wenFix && fuValids(FuType.csr))
     o.rfDest := i.rfDest
     o.fuType := i.fuType
-    o.srfWen := snn.io.wen
+    o.srfWen := snn.io.wen && (!fuValids(FuType.alu))
     o.srfDest := snn.io.srfAddrGen
   }
   io.out.bits.decode.cf.pc := io.in.bits.cf.pc
