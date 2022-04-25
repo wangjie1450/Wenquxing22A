@@ -88,7 +88,6 @@ class NutShellSimTop extends Module {
   BoringUtils.addSink(difftest.isRVC2, "difftestIsRVC2")
   BoringUtils.addSink(difftest.intrNO, "difftestIntrNO")
   BoringUtils.addSink(difftest.r, "difftestRegs")
-  BoringUtils.addSink(difftest.sr, "difftestSRegs")
   BoringUtils.addSink(difftest.priviledgeMode, "difftestMode")
   BoringUtils.addSink(difftest.mstatus, "difftestMstatus")
   BoringUtils.addSink(difftest.sstatus, "difftestSstatus") 
