@@ -38,9 +38,9 @@ object LSUOpType { //TODO: refactor LSU fuop
   def sw   = "b0001010".U
   def sd   = "b0001011".U
   
-  def nst  = "b0111011".U
+  def nst  = "b1111011".U
   //def sst  = "b1001011".U
-  def nld  = "b1011011".U
+  def nld  = "b0011011".U
   //def sld  = "b1101011".U
 
   def lr      = "b0100000".U
@@ -57,8 +57,8 @@ object LSUOpType { //TODO: refactor LSU fuop
   
   def isAdd(func: UInt) = func(6)
   def isAtom(func: UInt): Bool = func(5)
-  def isStore(func: UInt): Bool = func(3) | func === nst
-  def isLoad(func: UInt): Bool = !isStore(func) & !isAtom(func) | func === nld
+  def isStore(func: UInt): Bool = func(3) || func === nst
+  def isLoad(func: UInt): Bool = !isStore(func) & !isAtom(func) || func === nld
   def isLR(func: UInt): Bool = func === lr
   def isSC(func: UInt): Bool = func === sc
   def isAMO(func: UInt): Bool = isAtom(func) && !isLR(func) && !isSC(func)
