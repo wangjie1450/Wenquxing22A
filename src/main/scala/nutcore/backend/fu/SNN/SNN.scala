@@ -28,21 +28,23 @@ object SNNOpType{
     def sge   = "b100".U
     def rpop  = "b00000_001".U
     def sls   = "b00001_001".U
-    def vth   = "b00010_001".U
+    def inf   = "b00010_001".U
     def sup   = "b00011_001".U
     def nadd  = "b010".U
-    def sinit = "b1110".U    
+    def sinit = "b1110".U  
+    def vleak = "b100001".U
 
     //def isDOp(func: UInt): Bool = !func(1) && !func(2)
-    def isWen(func: UInt):Bool  = (func === sge || func === sinit || func === sls || func === sup )
+    def isWen(func: UInt):Bool  = (func === sge || func === sinit || func === sls || func === sup || func === inf || func === vleak)
 }
 
 object SNNRF{
-    def num = 4
+    def num = 5
     def vinit = "b001".U
     def output = "b010".U
     def nr  = "b011".U
     def sr  = "b100".U
+    def vleak = "b101".U
 }
 
 object  SNNCalcType{
@@ -55,7 +57,7 @@ object  SNNCalcType{
 class SNNIO extends FunctionUnitIO{
     val imm = Input(UInt(XLEN.W))
     val srf = Input(Vec(SNNRF.num, UInt(XLEN.W)))
-    val srfAddrGen = Output(UInt(2.W))
+    val srfAddrGen = Output(UInt(3.W))
     val wen = Output(Bool())
 }
 
@@ -83,10 +85,11 @@ class SNN extends NutCoreModule{
         SNNOpType.sge         -> SNNCalcType.neuron,
         SNNOpType.rpop        -> SNNCalcType.ssp,
         SNNOpType.sls         -> SNNCalcType.neuron,
-        SNNOpType.vth         -> SNNCalcType.none,
+        SNNOpType.inf         -> SNNCalcType.stdp,
         SNNOpType.sup         -> SNNCalcType.stdp,
         SNNOpType.nadd        -> SNNCalcType.neuron,
-        SNNOpType.sinit       -> SNNCalcType.stdp
+        SNNOpType.sinit       -> SNNCalcType.stdp,
+        SNNOpType.vleak       -> SNNCalcType.stdp
     ))
 
     // spike process module
@@ -104,6 +107,7 @@ class SNN extends NutCoreModule{
     neuron.io.in.bits.imm   := imm
     neuron.io.in.bits.vinit := io.srf(SNNRF.vinit)
     neuron.io.in.bits.spike := io.srf(SNNRF.nr)
+    neuron.io.in.bits.vleak := io.srf(SNNRF.vleak)
     neuron.io.in.bits.option := option
     neuron.io.out.ready     := io.out.ready
     neuron.io.in.valid      := valid && (calcUnit === SNNCalcType.neuron)
@@ -119,6 +123,7 @@ class SNN extends NutCoreModule{
     stdp.io.in.valid := (valid && (calcUnit === SNNCalcType.stdp))
     stdp.io.out.ready := io.out.ready
     stdp.io.in.bits.vinit := io.srf(SNNRF.vinit)
+    //stdp.io.in.bits.spike := Mux(option === SNNOpType.sup, neuron.io.out.bits(0), DontCare)
     
     // SNN calcutation result
     val res = LookupTree(option, List(
@@ -128,7 +133,9 @@ class SNN extends NutCoreModule{
         SNNOpType.sls   ->  neuron.io.out.bits,
         SNNOpType.sup   ->  stdp.io.out.bits.res,
         SNNOpType.nadd  ->  neuron.io.out.bits,
-        SNNOpType.sinit ->  stdp.io.out.bits.res 
+        SNNOpType.sinit ->  stdp.io.out.bits.res,
+        SNNOpType.inf   ->  stdp.io.out.bits.res,
+        SNNOpType.vleak   ->  stdp.io.out.bits.res
     ))
 
     // generating address of SNN regfile 
@@ -136,7 +143,9 @@ class SNN extends NutCoreModule{
         SNNOpType.sinit     -> SNNRF.vinit,
         SNNOpType.sls       -> SNNRF.output,
         SNNOpType.sge       -> SNNRF.nr,
-        SNNOpType.sup       -> SNNRF.sr
+        SNNOpType.sup       -> SNNRF.sr,
+        SNNOpType.inf       -> SNNRF.output,
+        SNNOpType.vleak     -> SNNRF.vleak
     ))
 
     io.in.ready := LookupTree(calcUnit, List(
@@ -161,7 +170,8 @@ class SNN extends NutCoreModule{
         printf("[SNN]src1 = 0x%x\n", src1)
         printf("[SNN]src2 = 0x%x\n", src2)
         printf("[SNN]imm = 0x%x\n", imm)
-        printf("[SNN]vinit = 0x%x\n", io.srf(0))
+        printf("[SNN]res = 0x%x\n", res)
+        printf("[SNN]dest = 0x%x\n", io.srfAddrGen)
         printf("\n")
     }
 }
