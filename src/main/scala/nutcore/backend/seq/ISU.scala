@@ -65,17 +65,19 @@ class ISU(implicit val p: NutCoreConfig) extends NutCoreModule with HasRegFilePa
   val srfReq = LookupTree(io.in(0).bits.ctrl.fuOpType, List(
     SNNOpType.sge     -> SNNRF.vinit,
     SNNOpType.sls     -> SNNRF.nr,
-    SNNOpType.sup     -> SNNRF.output
+    SNNOpType.sup     -> SNNRF.output,
+    SNNOpType.nadd    -> SNNRF.vleak
   )) 
   io.out.bits.data.srf(SNNRF.vinit) := Mux(io.forward.wb.srfDest === srfReq, io.forward.wb.srfData, 
                                             Mux(io.wb.srfDest === srfReq, io.wb.srfData, srf.read(SNNRF.vinit)))
-  //io.out.bits.data.srf(SNNRF.vinit) := srf.read(SNNRF.vinit)
   io.out.bits.data.srf(SNNRF.output) := Mux(io.forward.wb.srfDest === srfReq, io.forward.wb.srfData,  
                                             Mux(io.wb.srfDest === srfReq, io.wb.srfData, srf.read(SNNRF.output)))
   io.out.bits.data.srf(SNNRF.nr)    := Mux(io.forward.wb.srfDest === srfReq, io.forward.wb.srfData, 
                                             Mux(io.wb.srfDest === srfReq, io.wb.srfData, srf.read(SNNRF.nr)))
   io.out.bits.data.srf(SNNRF.sr)    := Mux(io.forward.wb.srfDest === srfReq, io.forward.wb.srfData, 
                                             Mux(io.wb.srfDest === srfReq, io.wb.srfData, srf.read(SNNRF.sr)))
+  io.out.bits.data.srf(SNNRF.vleak) := Mux(io.forward.wb.srfDest === srfReq, io.forward.wb.srfData, 
+                                            Mux(io.wb.srfDest === srfReq, io.wb.srfData, srf.read(SNNRF.vleak)))
   when (io.wb.srfWen) { srf.write(io.wb.srfDest, io.wb.srfData) }
 
   // out1
@@ -107,12 +109,14 @@ class ISU(implicit val p: NutCoreConfig) extends NutCoreModule with HasRegFilePa
       /*printf("[ISU] a0 = 0x%x\n", rf.read(10.U))
       printf("[ISU] a1 = 0x%x\n", rf.read(11.U))
       printf("[ISU] a2 = 0x%x\n", rf.read(12.U))
-      printf("[ISU] io.wb.srfData = 0x%x\n",io.wb.srfData)
-      printf("[ISU] SRF[0] = 0x%x\n",srf.read(SNNRF.vinit))
-      printf("[ISU] SRF[1] = 0x%x\n",srf.read(SNNRF.output))
-      printf("[ISU] SRF[2] = 0x%x\n",srf.read(SNNRF.nr))
-      printf("[ISU] SRF[3] = 0x%x\n",srf.read(SNNRF.sr))*/
+      printf("[ISU] io.wb.srfData = 0x%x\n",io.wb.srfData)*/
+      printf("[ISU] vinit = 0x%x\n",srf.read(SNNRF.vinit))
+      printf("[ISU] output = 0x%x\n",srf.read(SNNRF.output))
+      printf("[ISU] nr = 0x%x\n",srf.read(SNNRF.nr))
+      printf("[ISU] sr = 0x%x\n",srf.read(SNNRF.sr))
+      printf("[ISU] vleak = 0x%x\n",srf.read(SNNRF.vleak))
       printf("[ISU] srfReq = %d\n", srfReq)      
+      printf("[ISU] fuOptype = %d\n", io.in(0).bits.ctrl.fuOpType)      
       printf("[ISU] io.forward.wb.srfDest = 0x%x\n", io.forward.wb.srfDest)      
       printf("[ISU] io.forward.wb.srfData = 0x%x\n", io.forward.wb.srfData)      
       printf("[ISU] io.wb.srfDest = 0x%x\n", io.wb.srfDest)      
@@ -138,6 +142,5 @@ class ISU(implicit val p: NutCoreConfig) extends NutCoreModule with HasRegFilePa
 
   if (!p.FPGAPlatform) {
     BoringUtils.addSource(VecInit((0 to NRReg-1).map(i => rf.read(i.U))), "difftestRegs")
-    BoringUtils.addSource(VecInit((0 to SNRReg - 1).map(i => srf.read(i.U))), "difftestSRegs")
   }
 }
