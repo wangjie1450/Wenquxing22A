@@ -56,11 +56,15 @@ class STDP(len: Int) extends NutCoreModule{
         //syn_reg    := io.in.bits.src1
         val syn_new = VecInit(syn_reg.asBools)
         for (i <- 0 to (len - 1)){
-            when(io.in.bits.output(i) === 1.U){syn_new(i) := src2(i) && io.in.bits.output(i)}
-            when(io.in.bits.output(i) === 0.U){syn_new(i) := src1(i)}
+            when(io.in.bits.output(0) === 1.U){ 
+                    syn_new(i) := src2(i) && io.in.bits.output(0) || src1(i)
+                }
+            when(io.in.bits.output(0) === 0.U){syn_new(i) := src1(i)}
         }  
         io.out.bits.res := syn_new.asUInt
     }.elsewhen(op === SNNOpType.sup && valid && !stdpEnable) {
+        io.out.bits.res := src1
+    }.elsewhen((op === SNNOpType.inf || op === SNNOpType.vleak)&& valid) {
         io.out.bits.res := src1
     }.otherwise {
         io.out.bits.res := DontCare
