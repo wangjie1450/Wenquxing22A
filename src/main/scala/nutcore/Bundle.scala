@@ -80,7 +80,7 @@ class WriteBackIO extends NutCoreBundle {
   val rfDest = Output(UInt(5.W))
   val rfData = Output(UInt(XLEN.W))
   val srfWen = Output(Bool())
-  val srfDest = Output(UInt(2.W))
+  val srfDest = Output(UInt(3.W))
   val srfData = Output(UInt(XLEN.W))
 }
 
