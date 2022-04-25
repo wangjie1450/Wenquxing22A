@@ -24,7 +24,7 @@ import utils._
 
 trait HasRegFileParameter {
   val NRReg = 32
-  val SNRReg = 5
+  val SNRReg = 6
 }
 
 class RegFile extends HasRegFileParameter with HasNutCoreParameter {
