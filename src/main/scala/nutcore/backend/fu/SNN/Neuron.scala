@@ -27,6 +27,7 @@ class NeuronIO(val len: Int) extends NutCoreBundle{
         val src2        = Input(UInt(len.W))
         val imm         = Input(UInt(len.W))
         val vinit       = Input(UInt(len.W))
+        val vleak       = Input(UInt(len.W))
         val spike       = Input(UInt(len.W))
         val option      = Input(UInt(len.W))
     }))
@@ -47,12 +48,12 @@ class NeurModule(len: Int) extends NutCoreModule{
     //wlt.io.in(2) := (imm(7,0) ^ Fill(8, 1.U)) + 1.U
     //val sum = RegInit(0.U(len.W))
     //sum := wlt.io.sum
-    val nadd = src1(63,1) + src2 + ((imm ^ Fill(len, 1.U)) + 1.U)
+    val nadd = src1(63,1) + src2 + ((io.in.bits.vleak ^ Fill(len, 1.U)) + 1.U)
     val naddRes = nadd << 1
     //val overflow = WireInit(false.B)
     //overflow := wlt.io.overf
     val spike  = src1(63,1) >= src2
-    val slsRes = (src1 << 1) + io.in.bits.spike(0)
+    val slsRes = Mux(io.in.bits.vinit(0) === 1.U, ZeroExt(src1 >> 1, len), (src1 << 1) + io.in.bits.spike(0))
     val sgeRes = Mux(spike && option === SNNOpType.sge && valid, Cat(io.in.bits.vinit(63, 1), 1.U), Cat(src1(63,1), 0.U))
 
     io.out.bits := LookupTree(option, List(
