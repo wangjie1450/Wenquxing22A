@@ -39,14 +39,6 @@ class EXU(implicit val p: NutCoreConfig) extends NutCoreModule {
 
   val (fuType, fuOpType) = (io.in.bits.ctrl.fuType, io.in.bits.ctrl.fuOpType)
 
-  when (io.in.valid === true.B && fuType === FuType.snn && SNNDebug.enablePrint){
-      printf("[EXU]fuOpType = 0x%x\n",fuOpType)
-      printf("[EXU]src1 = 0x%x\n", src1)
-      printf("[EXU]src2 = 0x%x\n", src2)
-      printf("[EXU]imm = 0x%x\n", io.in.bits.data.imm)
-      printf("\n")
-  }
-
   val fuValids = Wire(Vec(FuType.num, Bool()))
   (0 until FuType.num).map (i => fuValids(i) := (fuType === i.U) && io.in.valid && !io.flush)
 
@@ -164,5 +156,12 @@ class EXU(implicit val p: NutCoreConfig) extends NutCoreModule {
     BoringUtils.addSink(cycleCnt, "simCycleCnt")
     BoringUtils.addSink(instrCnt, "simInstrCnt")
     BoringUtils.addSource(nutcoretrap, "nutcoretrap")
+  }
+  when (io.in.valid === true.B && fuType === FuType.snn && SNNDebug.enablePrint){
+      printf("[EXU]fuOpType = 0x%x\n",fuOpType)
+      printf("[EXU]src1 = 0x%x\n", src1)
+      printf("[EXU]src2 = 0x%x\n", src2)
+      printf("[EXU]imm = 0x%x\n", io.in.bits.data.imm)
+      printf("\n")
   }
 }
