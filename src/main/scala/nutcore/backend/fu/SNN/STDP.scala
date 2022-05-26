@@ -30,7 +30,6 @@ class STDPIO(val len: Int) extends NutCoreBundle{
     }))
     val out = DecoupledIO(new Bundle{
         val res = Output(UInt(len.W))
-        val en = Output(Bool())
     }) 
 }
 
@@ -43,31 +42,35 @@ class STDP(len: Int) extends NutCoreModule{
     //val output_reg = RegInit(0.U(len.W))
     //val input_reg  = RegInit(0.U(len.W))
     val syn_reg    = RegInit(0.U(len.W))
-
-    io.in.ready := io.out.ready
-    io.out.valid := valid
+    io.in.ready := DontCare
+    io.out.valid := DontCare
     io.out.bits := DontCare
-
     when(op === SNNOpType.sinit && valid) {
         io.out.bits.res := io.in.bits.imm
+        io.in.ready := io.out.ready
+        io.out.valid := valid
     }.elsewhen(op === SNNOpType.sup && valid && stdpEnable){
         //output_reg := io.in.bits.output
         //input_reg  := io.in.bits.src2
         //syn_reg    := io.in.bits.src1
         val syn_new = VecInit(syn_reg.asBools)
+    
         for (i <- 0 to (len - 1)){
             when(io.in.bits.output(0) === 1.U){ 
-                    syn_new(i) := src2(i) && io.in.bits.output(0) || src1(i)
+                    syn_new(i) := src2(i) && io.in.bits.output(0)
                 }
-            when(io.in.bits.output(0) === 0.U){syn_new(i) := src1(i)}
         }  
         io.out.bits.res := syn_new.asUInt
+        io.in.ready := io.out.ready
+        io.out.valid := valid
     }.elsewhen(op === SNNOpType.sup && valid && !stdpEnable) {
         io.out.bits.res := src1
-    }.elsewhen((op === SNNOpType.inf || op === SNNOpType.vleak)&& valid) {
+        io.in.ready := io.out.ready
+        io.out.valid := valid
+    }.elsewhen((op === SNNOpType.inf || op === SNNOpType.vleak) && valid) {
         io.out.bits.res := src1
-    }.otherwise {
-        io.out.bits.res := DontCare
+        io.in.ready := io.out.ready
+        io.out.valid := valid
     }
     when (valid && SNNDebug.enablePrint){
         printf("[stdp]option = 0x%x\n",op)
@@ -76,7 +79,7 @@ class STDP(len: Int) extends NutCoreModule{
         printf("[stdp]imm = 0x%x\n", imm)
         printf("[stdp]en = 0x%x\n", stdpEnable)
         printf("[stdp]output = 0x%x\n", io.in.bits.output)
-        printf("[stdp]res = 0x%x\n", io.out.bits.res)       
+        printf("[stdp]res = 0x%x\n", io.out.bits.res)                          
         printf("\n")
     }
 }
