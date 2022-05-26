@@ -33,9 +33,10 @@ object SNNOpType{
     def nadd  = "b010".U
     def sinit = "b1110".U  
     def vleak = "b100001".U
+    def ltd   = "b11110".U
 
     //def isDOp(func: UInt): Bool = !func(1) && !func(2)
-    def isWen(func: UInt):Bool  = (func === sge || func === sinit || func === sls || func === sup || func === inf || func === vleak)
+    def isWen(func: UInt):Bool  = (func === sge || func === sinit || func === sls || func === sup || func === inf || func === vleak || func === ltd)
 }
 
 object SNNRF{
@@ -51,7 +52,7 @@ object  SNNCalcType{
     def ssp     = "b00".U
     def neuron  = "b01".U
     def stdp    = "b10".U 
-    def none    = "b11".U
+    def ltd    = "b11".U
 }
 
 class SNNIO extends FunctionUnitIO{
@@ -89,7 +90,8 @@ class SNN extends NutCoreModule{
         SNNOpType.sup         -> SNNCalcType.stdp,
         SNNOpType.nadd        -> SNNCalcType.neuron,
         SNNOpType.sinit       -> SNNCalcType.stdp,
-        SNNOpType.vleak       -> SNNCalcType.stdp
+        SNNOpType.vleak       -> SNNCalcType.stdp,
+        SNNOpType.ltd         -> SNNCalcType.ltd
     ))
 
     // spike process module
@@ -125,6 +127,12 @@ class SNN extends NutCoreModule{
     stdp.io.in.bits.vinit := io.srf(SNNRF.vinit)
     //stdp.io.in.bits.spike := Mux(option === SNNOpType.sup, neuron.io.out.bits(0), DontCare)
     
+    val ltd = Module(new LTD(XLEN))
+    ltd.io.in.bits.prob := src1
+    ltd.io.in.valid := ((calcUnit === SNNCalcType.ltd) && valid)
+    ltd.io.out.ready := io.out.ready
+    val cnt = ltd.io.out.bits.cnt
+    ltd.io.in.bits.syn := Mux(cnt =/= 0.U, ltd.io.out.bits.ret, src2)
     // SNN calcutation result
     val res = LookupTree(option, List(
         SNNOpType.ands  ->  ssp.io.out.bits,
@@ -135,7 +143,8 @@ class SNN extends NutCoreModule{
         SNNOpType.nadd  ->  neuron.io.out.bits,
         SNNOpType.sinit ->  stdp.io.out.bits.res,
         SNNOpType.inf   ->  stdp.io.out.bits.res,
-        SNNOpType.vleak   ->  stdp.io.out.bits.res
+        SNNOpType.vleak ->  stdp.io.out.bits.res,
+        SNNOpType.ltd   ->  ltd.io.out.bits.res
     ))
 
     // generating address of SNN regfile 
@@ -144,6 +153,7 @@ class SNN extends NutCoreModule{
         SNNOpType.sls       -> SNNRF.output,
         SNNOpType.sge       -> SNNRF.nr,
         SNNOpType.sup       -> SNNRF.sr,
+        SNNOpType.ltd       -> SNNRF.sr,
         SNNOpType.inf       -> SNNRF.output,
         SNNOpType.vleak     -> SNNRF.vleak
     ))
@@ -152,7 +162,7 @@ class SNN extends NutCoreModule{
         SNNCalcType.ssp         -> ssp.io.in.ready,
         SNNCalcType.neuron      -> neuron.io.in.ready,
         SNNCalcType.stdp        -> stdp.io.in.ready,
-        SNNCalcType.none        -> io.out.ready
+        SNNCalcType.ltd         -> ltd.io.in.ready
     ))
 
     io.out.bits := res
@@ -162,7 +172,7 @@ class SNN extends NutCoreModule{
         SNNCalcType.ssp         -> ssp.io.out.valid,
         SNNCalcType.neuron      -> neuron.io.out.valid,
         SNNCalcType.stdp        -> stdp.io.out.valid,
-        SNNCalcType.none        -> valid
+        SNNCalcType.ltd         -> ltd.io.out.valid
     ))
 
     when (valid === true.B && SNNDebug.enablePrint){
@@ -171,7 +181,9 @@ class SNN extends NutCoreModule{
         printf("[SNN]src2 = 0x%x\n", src2)
         printf("[SNN]imm = 0x%x\n", imm)
         printf("[SNN]res = 0x%x\n", res)
+        printf("[SNN]ltdret = 0x%x\n", ltd.io.out.bits.ret)
         printf("[SNN]dest = 0x%x\n", io.srfAddrGen)
+        printf("[SNN]io.in.ready = %d\n", io.in.ready)
         printf("\n")
     }
 }
