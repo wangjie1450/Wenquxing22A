@@ -1,3 +1,19 @@
+# Wenquxing 22A: A Low-power Neuromorphic Processor of RISC-V Customized Instruction Extensions for Spiking Neuron Network
+
+>Copyright
+
+Wenquxing 22A is a low-power neuromorphic processor which combines both general-purpose CPU functions and SNN to efficiently computing it with RISC-V SNN extension instructions. Its key features are shown as follow:
+
+- The customized SNN extension instruction set in high computational granularity based on RISC-V ISA achieves the combination of a general-purpose processor and a SNN accelerator;
+- Streamlined LIF model reduces the difficulty of computing and integrating the neuron model in our processor implementation;
+- with the Binary Stochastic STDP to gear to the
+single cycle updating of synaptic weights.
+
+The full documents of Wenquxing 22A is in [doc]() directory.
+
+---
+**The following part is the introduce of Nutshell**
+---
 # NutShell (果壳)
 
 NutShell is a processor developed by the OSCPU (Open Source Chip Project by University) team.
