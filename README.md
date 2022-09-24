@@ -9,7 +9,7 @@ Wenquxing 22A is a low-power neuromorphic processor which combines both general-
 - with the Binary Stochastic STDP to gear to the
 single cycle updating of synaptic weights.
 
-The full documents of Wenquxing 22A is in [doc](./doc) directory.
+The full documents of Wenquxing 22A is in [doc](doc/) directory.
 
 ---
 **The following part is the introduce of Nutshell**
