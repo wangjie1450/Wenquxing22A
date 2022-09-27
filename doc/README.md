@@ -18,6 +18,53 @@ Wenquxing 22A is a low-power neuromorphic processor which combines both general-
 - with the Binary Stochastic STDP to gear to the
 single cycle updating of synaptic weights.
 
+### File structure of Wenquxing 22A(ONLY related files are listed)
+
+```
+./src
+├── main
+│   └── scala
+│       ├── bus             #Bus related files
+│       ├── device          #Peripherals related
+│       ├── nutcore         
+│       │   ├── backend
+│       │   │   ├── fu 
+│       │   │   │   ├── ...
+│       │   │   │   ├── SNN                     #SNN computing Unit
+│       │   │   │   │   ├── LTD.scala           #LTD process unit
+│       │   │   │   │   ├── Neuron.scala        #Neuron update unit
+│       │   │   │   │   ├── SNN.scala           #Top file of SNN unit
+│       │   │   │   │   ├── SpikePP.scala       #Spike process unit
+│       │   │   │   │   ├── STDP.scala          #LTP process unit
+│       │   │   ├── ooo
+│       │   │   └── seq
+│       │   │       ├── EXU.scala               #Executive Unit with SNN unit
+│       │   │       ├── ISU.scala               #Issue unit with SNN regitsers
+│       │   │       └── WBU.scala               #Write back unit
+│       │   ├── Bundle.scala
+│       │   ├── Decode.scala
+│       │   ├── frontend
+│       │   │   ├── BPU.scala
+│       │   │   ├── Frontend.scala
+│       │   │   ├── IBF.scala
+│       │   │   ├── IDU.scala                   #Decode unit with SNN instruction extensions
+│       │   │   ├── IFU.scala
+│       │   │   └── NaiveIBF.scala
+│       │   ├── isa
+│       │   │   ├── ...
+│       │   │   └── RVSNN.scala                 #Encoding of SNN instructions 
+│       │   ├── mem
+│       │   ├── NutCore.scala
+│       │   ├── NutCoreTrap.scala
+│       │   ├── RF.scala                        #RISC-V defined regitsers and SNN regitsers
+│       │   └── utils
+│       ├── sim
+│       ├── system
+│       ├── top
+│       └── utils
+└── test
+```
+
 Since 32 general-purpose registers defined by RISC-V cannot meet the demand of SNN computing, we additionally design the SNN specifical registers in our processor. the following table describe each register:
 
 |Name  |Bit address   |Description |
